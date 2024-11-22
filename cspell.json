@@ -1,0 +1,38 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "Bigints",
+    "Cliopts",
+    "degit",
+    "Dteje",
+    "esbuild",
+    "illumos",
+    "Informatik",
+    "memoji",
+    "Muzaffarpur",
+    "octocat",
+    "outdir",
+    "pcap",
+    "Repobeats",
+    "rmrf",
+    "Sarwagya",
+    "Shinjuku",
+    "sniffa",
+    "socio",
+    "tsdoc",
+    "Umami",
+    "Werkstudent",
+    "winrt",
+    "wlan",
+    "xsarwagya"
+  ],
+  "flagWords": [],
+  "ignorePaths": [
+    "package.json",
+    "package-lock.json",
+    "yarn.lock",
+    "tsconfig.json",
+    "node_modules/**"
+  ]
+}

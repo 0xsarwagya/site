@@ -1,0 +1,74 @@
+name: 0xsarwagya.codes
+
+on: [push]
+
+permissions: "write-all"
+
+jobs:
+  dependencies:
+    name: 📦 Dependencies
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+      - run: npm ci
+
+  lint:
+    name: 🔬 Lint & Format
+    runs-on: macos-latest
+    needs: [dependencies]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+      - run: npm ci
+      - name: 🔬 Lint & Format
+        run: npm run lint:check
+
+  audit:
+    name: 🛡️ Audit
+    runs-on: macos-latest
+    needs: [dependencies]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+      - name: Install better-npm-audit
+        run: npm install -g better-npm-audit
+      - name: 🛡️ Audit
+        run: npm run audit
+
+  spell:
+    name: 🈸 Spellcheck
+    runs-on: macos-latest
+    needs: [dependencies]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+      - run: npm ci
+      - name: 🈸 Spellcheck
+        run: npm run spell:check
+
+  type:
+    name: ʦ Typecheck
+    runs-on: macos-latest
+    needs: [dependencies]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+      - run: npm ci
+      - name: ʦ Typecheck
+        run: npm run type:check
