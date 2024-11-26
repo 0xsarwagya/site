@@ -1,0 +1,37 @@
+[
+  {
+    "name": "bigints",
+    "description": "A small package to do big things with big numbers",
+    "url": "https://github.com/0xsarwagya/bigints",
+    "stars": 1,
+    "image": "/api/images/github?title=0xsarwagya%2Fbigints&description=A%20small%20package%20to%20do%20big%20things%20with%20big%20numbers"
+  },
+  {
+    "name": "cvssify",
+    "description": "An open-source Typescript library designed to simplify the process of calculating Common Vulnerability Scoring System (CVSS) 3.0 scores",
+    "url": "https://github.com/0xsarwagya/cvssify",
+    "stars": 1,
+    "image": "/api/images/github?title=0xsarwagya%2Fcvssify&description=An%20open-source%20Typescript%20library%20designed%20to%20simplify%20the%20process%20of%20calculating%20Common%20Vulnerability%20Scoring%20System%20(CVSS)%203.0%20scores"
+  },
+  {
+    "name": "project-euler",
+    "description": "Solutions to Project Euler problems in JavaScript https://projecteuler.net/archives",
+    "url": "https://github.com/0xsarwagya/project-euler",
+    "stars": 1,
+    "image": "/api/images/github?title=0xsarwagya%2Fproject-euler&description=Solutions%20to%20Project%20Euler%20problems%20in%20JavaScript%20https%3A%2F%2Fprojecteuler.net%2Farchives"
+  },
+  {
+    "name": "sniffa",
+    "description": "A lightweight packet sniffer built with TypeScript to capture and analyze network traffic in real time.",
+    "url": "https://github.com/0xsarwagya/sniffa",
+    "stars": 1,
+    "image": "/api/images/github?title=0xsarwagya%2Fsniffa&description=A%20lightweight%20packet%20sniffer%20built%20with%20TypeScript%20to%20capture%20and%20analyze%20network%20traffic%20in%20real%20time."
+  },
+  {
+    "name": "site",
+    "description": "My minimalist portfolio site built with Vite, TailwindCSS and Vercel",
+    "url": "https://github.com/0xsarwagya/site",
+    "stars": 0,
+    "image": "/api/images/github?title=0xsarwagya%2Fsite&description=My%20minimalist%20portfolio%20site%20built%20with%20Vite%2C%20TailwindCSS%20and%20Vercel"
+  }
+]

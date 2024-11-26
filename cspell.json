@@ -1,0 +1,38 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "0xsarwagya",
+    "AICTE",
+    "clsx",
+    "contentlayer",
+    "cvss",
+    "cvssify",
+    "ESFI",
+    "Esports",
+    "Fira",
+    "gstatic",
+    "IZFP",
+    "Lato",
+    "licdn",
+    "lucide",
+    "Ludwigsburg",
+    "memoji",
+    "OWASP",
+    "Roboto",
+    "Sarwagya",
+    "SDLC",
+    "sniffa",
+    "socialify",
+    "techstack",
+    "Werkstudent"
+  ],
+  "flagWords": [],
+  "ignorePaths": [
+    "package.json",
+    "package-lock.json",
+    "yarn.lock",
+    "tsconfig.json",
+    "node_modules/**"
+  ]
+}

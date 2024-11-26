@@ -1,0 +1,130 @@
+[
+    {
+        "company": "SAP SE",
+        "logo": "https://img.icons8.com/color/512/sap.png",
+        "position": "Werkstudent: COO Office",
+        "duration": "July 2024 - Present",
+        "description": [
+            "Support the Industry Product Engineering department's COO with strategic initiatives like AI and Industry Foundation.",
+            "Assist in project management, business reporting, and operational improvements to enhance efficiency.",
+            "Gain valuable industry experience in a collaborative and innovative environment."
+        ],
+        "skills": [
+            "Project Management",
+            "Data Analysis and Reporting",
+            "Strategic Planning and Execution"
+        ]
+    },
+    {
+        "company": "Deutsche Bahn",
+        "position": "Application Security Intern",
+        "logo": "https://media.licdn.com/dms/image/v2/C4D0BAQH6HI_s-LjI8g/company-logo_200_200/company-logo_200_200/0/1630510142351/deutschebahn_logo?e=1740614400&v=beta&t=CSGfqstIQOsafr9pjF70dBFdEdXypIm8lr5o5WeAZgM",
+        "duration": "February 2024 - May 2024",
+        "description": [
+            "Conducted security assessments on web applications and APIs using tools like OWASP ZAP and Burp Suite.",
+            "Developed security guidelines for teams to enhance secure SDLC practices.",
+            "Automated security testing within CI/CD pipelines to improve vulnerability detection and response."
+        ],
+        "skills": [
+            "Application Security",
+            "Vulnerability Assessment",
+            "Secure Development Lifecycle (SDLC)"
+        ]
+    },
+    {
+        "company": "Fraunhofer IZFP",
+        "position": "Research Assistant",
+        "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTd8vYPowY224DvT-DMgTCWlEDDj8nEFuf-pw&s",
+        "duration": "April 2023 - March 2024",
+        "description": [
+            "Supported the development of digital twins focused on material and quality properties of components.",
+            "Applied machine learning and simulation tools to improve nondestructive testing methods.",
+            "Gained hands-on experience in data analysis, programming, and critical thinking."
+        ],
+        "skills": [
+            "Nondestructive Testing (NDT)",
+            "Machine Learning",
+            "Programming",
+            "Data Analysis"
+        ]
+    },
+    {
+        "company": "Cisco",
+        "position": "Summer Intern",
+        "logo": "https://media.licdn.com/dms/image/v2/D560BAQEtoQW10RlJSw/company-logo_200_200/company-logo_200_200/0/1728669425037/cisco_logo?e=1740614400&v=beta&t=gK25E0dkCLIudMscZhYc0OKML-HQyT6lwu0oaLyFTKU",
+        "duration": "August 2023 - October 2023",
+        "description": [
+            "Collaborated with a professional team to identify and address potential threats in cybersecurity.",
+            "Gained knowledge in vulnerability testing, incident response, and secure network practices."
+        ],
+        "skills": [
+            "Cybersecurity",
+            "Incident Response",
+            "Threat Analysis"
+        ]
+    },
+    {
+        "company": "AICTE",
+        "position": "Cybersecurity Intern (Virtual)",
+        "logo": "https://media.licdn.com/dms/image/v2/C4D0BAQFSrJpj8UoamA/company-logo_200_200/company-logo_200_200/0/1659413613554/aicteindia_logo?e=1740614400&v=beta&t=xgrSCNAIdyl8rLttxL08xDyp7TTmVJPFkl3pkaYKbQA",
+        "duration": "August 2023 - October 2023",
+        "description": [
+            "Completed hands-on tasks in setting up secure cloud environments and deploying security solutions using AWS.",
+            "Gained insights into threat detection, identity management, and encryption practices."
+        ],
+        "skills": [
+            "Cybersecurity",
+            "Network Security",
+            "Cloud Security",
+            "Penetration Testing"
+        ]
+    },
+    {
+        "company": "AICTE",
+        "position": "AWS Cloud Intern (Virtual)",
+        "logo": "https://media.licdn.com/dms/image/v2/C4D0BAQFSrJpj8UoamA/company-logo_200_200/company-logo_200_200/0/1659413613554/aicteindia_logo?e=1740614400&v=beta&t=xgrSCNAIdyl8rLttxL08xDyp7TTmVJPFkl3pkaYKbQA",
+        "duration": "July 2022 - September 2022",
+        "description": [
+            "Gained practical knowledge of AWS services such as EC2, S3, and Lambda.",
+            "Worked on tasks like setting up virtual private clouds and deploying secure applications."
+        ],
+        "skills": [
+            "AWS Cloud Computing",
+            "DevOps",
+            "Linux Administration",
+            "Networking"
+        ]
+    },
+    {
+        "company": "Esports Federation of India (ESFI)",
+        "position": "Web Development Intern",
+        "logo": "https://media.licdn.com/dms/image/v2/C4D0BAQHKJJzndUAcRg/company-logo_200_200/company-logo_200_200/0/1661240431288/esfindia_logo?e=1740614400&v=beta&t=UsQrIWH1FuRkH6o_cghrtFHMLKnknkuWamSYy05H7XQ",
+        "duration": "February 2021 - March 2022",
+        "description": [
+            "Maintained and improved websites by resolving backend issues and fixing bugs.",
+            "Collaborated with a team to develop and deploy web applications."
+        ],
+        "skills": [
+            "Web Development",
+            "React.js",
+            "Team Collaboration",
+            "Bug Fixing"
+        ]
+    },
+    {
+        "company": "Resistance Esports",
+        "position": "Software Development Intern",
+        "logo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT_oaJFQqhGoNn3eio-LWDIzu1mK3YwlgmiMw&s",
+        "duration": "July 2020 - January 2022",
+        "description": [
+            "Developed and maintained websites and Discord bots, ensuring security and smooth operation.",
+            "Worked on independent projects to deploy web applications while managing cybersecurity measures."
+        ],
+        "skills": [
+            "Web Development",
+            "Cybersecurity",
+            "Discord Bot Development",
+            "Network Security"
+        ]
+    }
+]

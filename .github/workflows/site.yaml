@@ -1,0 +1,113 @@
+name: "Site"
+
+on: [push]
+
+permissions: "write-all"
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  dependencies:
+    name: 📦 Dependencies
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+      - run: npm ci
+
+  lint:
+    name: 🔬 Lint & Format
+    runs-on: macos-latest
+    needs: [dependencies]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+      - run: npm ci
+      - name: 🔬 Lint & Format
+        run: npm run lint:check
+
+  audit:
+    name: 🛡️ Audit
+    runs-on: macos-latest
+    needs: [dependencies]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+      - name: Install better-npm-audit
+        run: npm install -g better-npm-audit
+      - name: 🛡️ Audit
+        run: npm audit --audit-level=high
+
+  spell:
+    name: 🈸 Spellcheck
+    runs-on: macos-latest
+    needs: [dependencies]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+      - run: npm ci
+      - name: 🈸 Spellcheck
+        run: npm run spell:check
+
+  type:
+    name: ʦ Typecheck
+    runs-on: macos-latest
+    needs: [dependencies]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+      - run: npm ci
+      - name: ʦ Typecheck
+        run: npm run type:check
+
+  test:
+    name: 🧪 Test
+    needs: [dependencies]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+      - run: npm ci
+      - name: 🧪 Setup Tests
+        run: npm run test:setup
+      - name: 🧪 Test
+        run: npm run test
+
+  build-and-relese:
+    name: 🚀 Build & Release
+    needs: [dependencies, lint, audit, spell, type, test]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: "npm"
+      - run: npm ci && npm install -g vercel
+      - name: 🚀 Deploy
+        run: npm run deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
