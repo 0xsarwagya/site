@@ -1,5 +1,10 @@
 import { ProjectCard } from "@/components/projects/card";
 import projects from "@/data/projects.json";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+	title: "Projects",
+};
 
 export default function Projects() {
 	return (
