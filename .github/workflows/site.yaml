@@ -104,6 +104,8 @@ jobs:
           node-version-file: package.json
           cache: "npm"
       - run: npm ci && npm install -g vercel
+      - name: 🚀 Update Projects
+        run: node scripts/syncProjects.js
       - name: 🚀 Deploy
         run: npm run deploy
         env:
