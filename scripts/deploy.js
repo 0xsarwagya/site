@@ -56,7 +56,7 @@ const deploy = async () => {
 
         logger.info('Pulling vercel environment variables...');
 
-        const {stdout: vercelEnvStdOut} = await execAsync(`vercel pull --yes --token=${token}`);
+        const {stdout: vercelEnvStdOut} = await execAsync(`vercel pull --environment=production --yes --token=${token}`);
 
         vercelEnvStdOut.trim().split('\n').forEach((line) => {
             logger.info(line);
@@ -66,7 +66,7 @@ const deploy = async () => {
 
         logger.info('Building for Vercel...');
 
-        const {stdout: buildStdOut} = await execAsync(`vercel build --token=${token}`);
+        const {stdout: buildStdOut} = await execAsync(`vercel build --prod --token=${token}`);
 
 
         buildStdOut.trim().split('\n').forEach((line) => {
@@ -77,7 +77,7 @@ const deploy = async () => {
 
         logger.info('Deploying to Vercel...');
 
-        const {stdout: deployStdOut} = await execAsync(`vercel deploy --prebuilt --token=${token}`);
+        const {stdout: deployStdOut} = await execAsync(`vercel deploy --prod --prebuilt --token=${token}`);
 
         
         deployStdOut.trim().split('\n').forEach((line) => {
