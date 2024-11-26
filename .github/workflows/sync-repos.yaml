@@ -26,10 +26,7 @@ jobs:
       - name: Run the script
         run: node scripts/syncProjects.js
 
-      - name: Commit and push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: Update projects.json"
-          commit_user_name: "github-actions[bot]"
-          commit_user_email: "github-actions[bot]@users.noreply.github.com"
-          branch: ${{ github.ref }}
+      - name: Install vercel
+        run: npm install -g vercel
+      - name: Deploy to Vercel
+        run: vercel --prod

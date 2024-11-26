@@ -29,9 +29,9 @@
   },
   {
     "name": "site",
-    "description": "My minimalist portfolio site built with Vite, TailwindCSS and Vercel",
+    "description": "My poprtfolio website built with Next.js and ShadcnUI",
     "url": "https://github.com/0xsarwagya/site",
     "stars": 0,
-    "image": "/api/images/github?title=0xsarwagya%2Fsite&description=My%20minimalist%20portfolio%20site%20built%20with%20Vite%2C%20TailwindCSS%20and%20Vercel"
+    "image": "/api/images/github?title=0xsarwagya%2Fsite&description=My%20poprtfolio%20website%20built%20with%20Next.js%20and%20ShadcnUI"
   }
 ]
