@@ -2,6 +2,10 @@ name: Commit Updated Projects
 
 permissions: 'write-all'
 
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
 on:
   workflow_dispatch:
   schedule:
@@ -29,4 +33,7 @@ jobs:
       - name: Install vercel
         run: npm install -g vercel
       - name: Deploy to Vercel
-        run: vercel --prod
+        run: vercel deploy --prod --token=${{secrets.VERCEL_TOKEN}}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
