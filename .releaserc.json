@@ -14,7 +14,7 @@
 			"prerelease": true
 		}
 	],
-	"repositoryUrl": "https://github.com/0xsarwagya/test.git",
+	"repositoryUrl": "https://github.com/0xsarwagya/site.git",
 	"plugins": [
 		"@semantic-release/commit-analyzer",
 		"@semantic-release/release-notes-generator",
