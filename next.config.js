@@ -11,6 +11,7 @@ const nextConfig = {
 	},
 	pageExtensions: ["mdx", "ts", "tsx"],
 	images: {
+		dangerouslyAllowSVG: true,
 		remotePatterns: [
 			{
 				hostname: "github.com",

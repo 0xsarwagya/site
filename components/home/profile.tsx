@@ -1,8 +1,19 @@
+"use client";
+
 import { ArrowRightIcon } from "@radix-ui/react-icons";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import React from "react";
+import { useInView } from "react-intersection-observer";
+import { SocialIcon } from "react-social-icons";
+import { Card } from "../ui/card";
 
 export const ProfileCard = () => {
+	const [ref, inView] = useInView({
+		triggerOnce: true,
+		threshold: 0.1,
+	});
+
 	return (
 		<div>
 			<div className="container py-24 lg:py-32">
@@ -48,6 +59,44 @@ export const ProfileCard = () => {
 						🇩🇪 Ludwigsburg, Germany
 					</span>
 				</div>
+				<Card
+					className="pt-4 bg-none shadow-none rounded-none border-none flex justify-center space-x-2"
+					ref={ref}
+				>
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={inView ? { opacity: 1, y: 0 } : {}}
+						transition={{ duration: 0.5, delay: 0.1 }}
+					>
+						<SocialIcon
+							url="https://twitter.com/0xsarwagya"
+							network="x"
+							style={{ height: 30, width: 30 }}
+						/>
+					</motion.div>
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={inView ? { opacity: 1, y: 0 } : {}}
+						transition={{ duration: 0.5, delay: 0.1 }}
+					>
+						<SocialIcon
+							url="https://linkedin.com/in/0xsarwagya"
+							network="linkedin"
+							style={{ height: 30, width: 30 }}
+						/>
+					</motion.div>
+					<motion.div
+						initial={{ opacity: 0, y: 20 }}
+						animate={inView ? { opacity: 1, y: 0 } : {}}
+						transition={{ duration: 0.5, delay: 0.1 }}
+					>
+						<SocialIcon
+							url="https://github.com/0xsarwagya"
+							network="github"
+							style={{ height: 30, width: 30 }}
+						/>
+					</motion.div>
+				</Card>
 			</div>
 		</div>
 	);

@@ -4,34 +4,41 @@
     "description": "A small package to do big things with big numbers",
     "url": "https://github.com/0xsarwagya/bigints",
     "stars": 1,
-    "image": "/api/images/github?title=0xsarwagya%2Fbigints&description=A%20small%20package%20to%20do%20big%20things%20with%20big%20numbers"
+    "image": "https://socialify.git.ci/0xsarwagya/bigints/image?description=0&language=1&name=1&owner=1&theme=Light"
   },
   {
     "name": "cvssify",
     "description": "An open-source Typescript library designed to simplify the process of calculating Common Vulnerability Scoring System (CVSS) 3.0 scores",
     "url": "https://github.com/0xsarwagya/cvssify",
     "stars": 1,
-    "image": "/api/images/github?title=0xsarwagya%2Fcvssify&description=An%20open-source%20Typescript%20library%20designed%20to%20simplify%20the%20process%20of%20calculating%20Common%20Vulnerability%20Scoring%20System%20(CVSS)%203.0%20scores"
+    "image": "https://socialify.git.ci/0xsarwagya/cvssify/image?description=0&language=1&name=1&owner=1&theme=Light"
   },
   {
     "name": "project-euler",
     "description": "Solutions to Project Euler problems in JavaScript https://projecteuler.net/archives",
     "url": "https://github.com/0xsarwagya/project-euler",
     "stars": 1,
-    "image": "/api/images/github?title=0xsarwagya%2Fproject-euler&description=Solutions%20to%20Project%20Euler%20problems%20in%20JavaScript%20https%3A%2F%2Fprojecteuler.net%2Farchives"
+    "image": "https://socialify.git.ci/0xsarwagya/project-euler/image?description=0&language=1&name=1&owner=1&theme=Light"
+  },
+  {
+    "name": "scramblify",
+    "description": "A CLI that encrypts and decrypts png, jpg, jpeg images to a gibberish image and provides you the key to unlock it later so that you have the complete control of your images.",
+    "url": "https://github.com/0xsarwagya/scramblify",
+    "stars": 1,
+    "image": "https://socialify.git.ci/0xsarwagya/scramblify/image?description=0&language=1&name=1&owner=1&theme=Light"
   },
   {
     "name": "sniffa",
     "description": "A lightweight packet sniffer built with TypeScript to capture and analyze network traffic in real time.",
     "url": "https://github.com/0xsarwagya/sniffa",
     "stars": 1,
-    "image": "/api/images/github?title=0xsarwagya%2Fsniffa&description=A%20lightweight%20packet%20sniffer%20built%20with%20TypeScript%20to%20capture%20and%20analyze%20network%20traffic%20in%20real%20time."
+    "image": "https://socialify.git.ci/0xsarwagya/sniffa/image?description=0&language=1&name=1&owner=1&theme=Light"
   },
   {
     "name": "site",
-    "description": "My poprtfolio website built with Next.js and ShadcnUI",
+    "description": "My poprtfolio website built with Next.js and ShadcnUI. Displays My Projects and Work Experience",
     "url": "https://github.com/0xsarwagya/site",
     "stars": 0,
-    "image": "/api/images/github?title=0xsarwagya%2Fsite&description=My%20poprtfolio%20website%20built%20with%20Next.js%20and%20ShadcnUI"
+    "image": "https://socialify.git.ci/0xsarwagya/site/image?description=0&language=1&name=1&owner=1&theme=Light"
   }
 ]

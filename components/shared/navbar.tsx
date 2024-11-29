@@ -35,7 +35,6 @@ export type NavItem = {
 
 const navItems: NavItem[] = [
 	{ title: "Home", href: "/", isExternal: false },
-	{ title: "Blog", href: "/blog", isExternal: false },
 	{
 		title: "Projects",
 		href: "/projects",

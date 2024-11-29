@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
 	title: {
 		template: "%s | Sarwagya Singh",
-		default: "Portfolio| Sarwagya Singh",
+		default: "Portfolio | Sarwagya Singh",
 	},
 	description:
 		"Hi, my name is Sarwagya Singh. An upcoming Cybersecurity Engineer and Web Developer.",
@@ -22,12 +22,15 @@ export const metadata: Metadata = {
 		"Cybersecurity",
 	],
 	openGraph: {
-		images: ["https://0xsarwagya.codes/api/images/og"],
+		images: [
+			"https://pbs.twimg.com/profile_banners/1591862626921115648/1714180802/1500x500",
+		],
 	},
 	authors: {
 		name: "Sarwagya Singh",
 		url: "https://0xsarwagya.codes",
 	},
+	icons: "/memoji.png",
 };
 
 export default function RootLayout({
