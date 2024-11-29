@@ -42,7 +42,7 @@ export function ProjectCard(project: ProjectCardProps) {
 							alt={project.name}
 							width={600}
 							height={300}
-							className="object-cover w-full h-48 transition-transform duration-300 group-hover:scale-110"
+							className="w-full h-48 transition-transform duration-300 group-hover:scale-110"
 						/>
 						<div className="absolute inset-0 bg-black bg-opacity-60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
 							<Button asChild variant="secondary" className="mr-2">

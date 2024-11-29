@@ -42,7 +42,7 @@ const generateJSON = (repos) => {
       description: repo.description, // Repository description
       url: repo.html_url, // Repository URL on GitHub
       stars: repo.stargazers_count, // Number of stars for the repository
-      image: `https://socialify.git.ci/${repo.full_name}/image?description=0&language=1&name=1&owner=1&theme=Light`, // Image URL for the repository
+      image: `https://socialify.git.ci/${repo.full_name}/image?description=1&language=1&name=1&owner=1&theme=Light`, // Image URL for the repository
     };
   });
 };
