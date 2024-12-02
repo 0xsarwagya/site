@@ -1,6 +1,7 @@
 import "@/styles/index.css";
 import { Footer } from "@/components/shared/footer";
 import { Navbar } from "@/components/shared/navbar";
+import { AIChatbot } from "@/components/ui/ai";
 import { poppins } from "@/lib/utils";
 import type { Metadata } from "next";
 
@@ -45,6 +46,7 @@ export default function RootLayout({
 					<Navbar />
 					<main className="flex justify-center">
 						<main className="lg:w-2/3 w-full">{children}</main>
+						{/* <AIChatbot /> */}
 					</main>
 					<Footer />
 				</main>
