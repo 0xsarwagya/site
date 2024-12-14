@@ -1,15 +1,18 @@
 import { type ClassValue, clsx } from "clsx";
-import { Poppins } from "next/font/google";
 import { twMerge } from "tailwind-merge";
 
 export const cn = (...inputs: ClassValue[]) => {
 	return twMerge(clsx(inputs));
 };
 
-const poppins = Poppins({
-	subsets: ["latin"],
-	weight: ["400", "700"],
-	variable: "--font-poppins",
-});
+export const parseError = (error: unknown) => {
+	if (error instanceof Error) {
+		return error.message;
+	}
 
-export { poppins };
+	if (typeof error === "string") {
+		return error;
+	}
+
+	return "An unknown error occurred";
+};

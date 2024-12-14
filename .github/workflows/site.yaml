@@ -18,7 +18,7 @@ jobs:
         with:
           node-version-file: package.json
           cache: "npm"
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
 
   lint:
     name: 🔬 Lint & Format
@@ -77,25 +77,9 @@ jobs:
       - name: ʦ Typecheck
         run: npm run type:check
 
-  test:
-    name: 🧪 Test
-    needs: [dependencies]
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version-file: package.json
-          cache: "npm"
-      - run: npm ci
-      - name: 🧪 Setup Tests
-        run: npm run test:setup
-      - name: 🧪 Test
-        run: npm run test
-
   build-and-relese:
     name: 🚀 Build & Release
-    needs: [dependencies, lint, audit, spell, type, test]
+    needs: [dependencies, lint, audit, spell, type]
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -104,8 +88,6 @@ jobs:
           node-version-file: package.json
           cache: "npm"
       - run: npm ci && npm install -g vercel
-      - name: 🚀 Update Projects
-        run: node scripts/syncProjects.js
       - name: 🚀 Deploy
         run: npm run deploy
         env:

@@ -1,14 +1,15 @@
-import type { Metadata } from "next";
+import { BlogDisplay } from "@/components/blog/grid";
+import { Header } from "@/components/shared/header";
 import React from "react";
 
-export const metadata: Metadata = {
-	title: "Blog",
-};
-
-export default function Blog() {
+export default function BlogLandingPage() {
 	return (
-		<div className="h-screen w-full flex items-center justify-center">
-			<h1 className="text-4xl font-bold text-center">Blog. Coming soon.</h1>
-		</div>
+		<React.Fragment>
+			{/* Header */}
+			<Header title="Blog" header="My Thoughts On Some Things" />
+
+			{/* Posts */}
+			<BlogDisplay />
+		</React.Fragment>
 	);
 }

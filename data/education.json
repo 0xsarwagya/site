@@ -1,0 +1,47 @@
+[
+    {
+        "degree": "Bachelors in Information Engineering",
+        "institute": "Technical University of Munich",
+        "location": "Heilbronn, Germany",
+        "from": "01/10/2024",
+        "to": null,
+        "url": "https://tum.de",
+        "description": "Currently enrolled in a program focused on understanding and designing information systems. The coursework includes hands-on projects and in-depth learning of related topics."
+    },
+    {
+        "degree": "Bachelors Plus Mint",
+        "institute": "Universität des Saarlandes",
+        "location": "Saarbrücken, Germany",
+        "from": "01/03/2023",
+        "to": "30/09/2024",
+        "url": "https://uni-saarland.de",
+        "description": "Participated in a preparatory program aimed at building a strong base in subjects like mathematics, computer science, and engineering. The program combines classroom learning with applied projects."
+    },
+    {
+        "degree": "German Language - B2 Certificate",
+        "institute": "Heimvolkhochschule Mariaspring",
+        "location": "Clausthal-Zellerfeld, Germany",
+        "from": "01/06/2022",
+        "to": "31/08/2022",
+        "url": "https://www.mariaspring.de/",
+        "description": "Completed an intensive German language course over three months. This included grammar, vocabulary, and conversational practice, achieving fluency at the B2 level."
+    },
+    {
+        "degree": "All India Senior Secondary School Examination",
+        "institute": "Indraprastha International School",
+        "location": "Muzaffarpur, India",
+        "from": "01/05/2019",
+        "to": "31/07/2021",
+        "url": "https://www.indraprasthaschool.com/",
+        "description": "Finished higher secondary education with a primary focus on science subjects. The program provided a solid base for further studies in engineering."
+    },
+    {
+        "degree": "All India Secondary School Examination",
+        "institute": "DAV Public School, Malighat",
+        "location": "Muzaffarpur, India",
+        "from": "01/04/2015",
+        "to": "31/05/2019",
+        "url": "https://davpsmalighat.com/",
+        "description": "Completed secondary school with a broad curriculum including science, mathematics, and humanities. This laid the foundation for higher education."
+    }
+]
