@@ -1,6 +1,13 @@
 "use client";
 
 import { Button, buttonVariants } from "@/components/ui/button";
+import {
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { HamburgerMenuIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
@@ -45,9 +52,34 @@ export const Navbar = () => {
 			>
 				Resume
 			</Link>
-			<Button variant={"outline"} size={"sm"} className="md:hidden">
-				<HamburgerMenuIcon />
-			</Button>
+			<div className="md:hidden">
+				<Sheet>
+					<SheetTrigger>
+						<Button variant={"outline"} size={"sm"}>
+							<HamburgerMenuIcon />
+						</Button>
+					</SheetTrigger>
+					<SheetContent side={"top"} className="md:hidden">
+						<SheetHeader>
+							<SheetTitle>Menu</SheetTitle>
+						</SheetHeader>
+						<div className="md:hidden grid gap-6 text-sm lg:text-xs items-center">
+							<Link href={"/"} prefetch>
+								Home
+							</Link>
+							<Link href={"/work"} prefetch>
+								Work
+							</Link>
+							<Link href={"/blog"} prefetch>
+								Blogs
+							</Link>
+							<Link href={"/guest-book"} prefetch>
+								Guest book
+							</Link>
+						</div>
+					</SheetContent>
+				</Sheet>
+			</div>
 		</header>
 	);
 };

@@ -18,7 +18,7 @@ export const GithubContributions = async () => {
 	const fourthQuarterData = github.data.slice(quarterLength * 3);
 
 	return (
-		<section className="relative border p-4 md:p-8 lg:p-12 border-t-0 grid gap-0.5 sm:grid-cols-2 sm:gap-[3px] sm:p-8 lg:gap-1">
+		<section className="relative border p-4 md:p-8 lg:p-12 border-t-0 grid gap-0.5 sm:grid-cols-2 sm:gap-[3px] sm:p-8 lg:gap-1 overflow-hidden">
 			{[thirdQuarterData, fourthQuarterData].map((data, index) => (
 				<ActivityCalendar
 					key={index.toString()}
