@@ -72,6 +72,8 @@ jobs:
           node-version-file: package.json
           cache: "npm"
       - run: npm ci --legacy-peer-deps
+      - name: Content Collection Build
+        run: npm run build
       - name: ʦ Typecheck
         run: npm run type:check
 
