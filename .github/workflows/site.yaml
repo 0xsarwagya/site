@@ -30,7 +30,7 @@ jobs:
         with:
           node-version-file: package.json
           cache: "npm"
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - name: 🔬 Lint & Format
         run: npm run lint:check
 
@@ -44,8 +44,6 @@ jobs:
         with:
           node-version-file: package.json
           cache: "npm"
-      - name: Install better-npm-audit
-        run: npm install -g better-npm-audit
       - name: 🛡️ Audit
         run: npm audit --audit-level=high
 
@@ -59,7 +57,7 @@ jobs:
         with:
           node-version-file: package.json
           cache: "npm"
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - name: 🈸 Spellcheck
         run: npm run spell:check
 
@@ -73,7 +71,7 @@ jobs:
         with:
           node-version-file: package.json
           cache: "npm"
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - name: ʦ Typecheck
         run: npm run type:check
 
@@ -87,7 +85,7 @@ jobs:
         with:
           node-version-file: package.json
           cache: "npm"
-      - run: npm ci && npm install -g vercel
+      - run: npm ci --legacy-peer-deps && npm install -g vercel
       - name: 🚀 Deploy
         run: npm run deploy
         env:
