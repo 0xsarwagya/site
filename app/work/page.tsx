@@ -4,7 +4,12 @@ import { TechStack } from "@/components/work/tech-stack";
 import education from "@/data/education.json";
 import experience from "@/data/experience.json";
 import { LinkedInLogoIcon } from "@radix-ui/react-icons";
+import type { Metadata } from "next";
 import React from "react";
+
+export const metadata: Metadata = {
+	title: "Work",
+};
 
 export default function ExperiencePage() {
 	return (

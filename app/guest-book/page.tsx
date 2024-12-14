@@ -1,6 +1,11 @@
 import { Header } from "@/components/shared/header";
 import { Cross1Icon } from "@radix-ui/react-icons";
+import type { Metadata } from "next";
 import React from "react";
+
+export const metadata: Metadata = {
+	title: "Guest Book",
+};
 
 export default function ExperiencePage() {
 	return (

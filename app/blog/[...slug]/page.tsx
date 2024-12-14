@@ -2,11 +2,26 @@ import { Header } from "@/components/shared/header";
 import { MDX } from "@/components/ui/mdx";
 import { ReaderIcon } from "@radix-ui/react-icons";
 import { allPosts } from "content-collections";
-import Image from "next/image";
+import type { Metadata, ResolvingMetadata } from "next";
 import { notFound } from "next/navigation";
 import React, { use } from "react";
 
 type Params = Promise<{ slug: string }>;
+
+export async function generateMetadata(
+	{ params }: { params: Params },
+	parent: ResolvingMetadata,
+): Promise<Metadata> {
+	// read route params
+	const slug = (await params).slug;
+
+	const blog = allPosts.find((blog) => blog._meta.path === slug[0]);
+
+	return {
+		title: blog?.title,
+		description: blog?.description,
+	};
+}
 
 export default function Page(props: {
 	params: Params;

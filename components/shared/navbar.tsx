@@ -54,7 +54,7 @@ export const Navbar = () => {
 			</Link>
 			<div className="md:hidden">
 				<Sheet>
-					<SheetTrigger>
+					<SheetTrigger asChild>
 						<Button variant={"outline"} size={"sm"}>
 							<HamburgerMenuIcon />
 						</Button>
