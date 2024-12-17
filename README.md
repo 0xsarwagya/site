@@ -12,7 +12,7 @@
     Site
   </h3>
   <p align="center">
-    My portfolio website. Built with NextJS. Inspired Heavily from <a href="">Hayden Bleasel's Website</a> and <a href="http://www.youtube.com/@AnthonySistilli">Anthony Sistilli's Portfolio Streams</a>
+    My portfolio website. Built with NextJS. Inspired Heavily from <a href="http://www.youtube.com/@AnthonySistilli">Anthony Sistilli's Portfolio Streams</a>
     <br />
     <br />
     <a href="https://0xsarwagya.codes"><strong>Visit Website »</strong></a>
