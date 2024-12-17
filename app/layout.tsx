@@ -42,6 +42,9 @@ export const metadata: Metadata = {
 		],
 		site: "https://0xsarwagya.codes",
 	},
+	verification: {
+		google: "yo2frn-tk1Yi7L-3F7kPWaP6Ub2LA6mNu3TqDteje1w",
+	},
 };
 
 export default function RootLayout({
