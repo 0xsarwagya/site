@@ -11,15 +11,24 @@ export const GithubContributions = async () => {
 	}
 
 	const quarterLength = Math.floor(github.data.length / 4);
+	const firstQuarterData = github.data.slice(0, quarterLength);
+	const secondQuarterData = github.data.slice(quarterLength, quarterLength * 2);
 	const thirdQuarterData = github.data.slice(
 		quarterLength * 2,
 		quarterLength * 3,
 	);
 	const fourthQuarterData = github.data.slice(quarterLength * 3);
 
+	const activityData = [
+		firstQuarterData,
+		secondQuarterData,
+		thirdQuarterData,
+		fourthQuarterData,
+	];
+
 	return (
 		<section className="relative border p-4 md:p-8 lg:p-12 border-t-0 grid gap-0.5 sm:grid-cols-2 sm:gap-[3px] sm:p-8 lg:gap-1 overflow-hidden">
-			{[thirdQuarterData, fourthQuarterData].map((data, index) => (
+			{activityData.map((data, index) => (
 				<ActivityCalendar
 					key={index.toString()}
 					hideColorLegend

@@ -1,5 +1,6 @@
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { LinkedInLogoIcon } from "@radix-ui/react-icons";
 import type { IconProps } from "@radix-ui/react-icons/dist/types";
 import Link from "next/link";
@@ -28,7 +29,13 @@ export function Header({
 				<span className="text-sm md:text-xs text-muted-foreground">
 					{title}
 				</span>
-				<CardHeader className="max-w-3xl text-center font-bold text-2xl leading-tight tracking-tight sm:text-3xl sm:leading-tight md:text-4xl md:leading-tight">
+				<CardHeader
+					className={cn(
+						"max-w-4xl text-center font-bold text-3xl leading-tight tracking-tight",
+						"sm:text-4xl sm:leading-tight",
+						"md:text-5xl md:leading-tight",
+					)}
+				>
 					{header}
 				</CardHeader>
 				<CardContent>

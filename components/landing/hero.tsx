@@ -1,5 +1,6 @@
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -19,7 +20,13 @@ export function Hero() {
 				<span className="text-sm md:text-xs text-muted-foreground">
 					Sarwagya Singh
 				</span>
-				<CardHeader className="max-w-3xl text-center font-bold text-2xl leading-tight tracking-tight sm:text-3xl sm:leading-tight md:text-4xl md:leading-tight">
+				<CardHeader
+					className={cn(
+						"max-w-4xl text-center font-bold text-3xl leading-tight tracking-tight",
+						"sm:text-4xl sm:leading-tight",
+						"md:text-5xl md:leading-tight",
+					)}
+				>
 					Indian Cybersecurity Student and Engineer Currently Based In
 					Stuttgart, Germany 🇩🇪.
 				</CardHeader>
@@ -30,7 +37,6 @@ export function Hero() {
 						prefetch
 						className={buttonVariants({
 							variant: "outline",
-							size: "sm",
 						})}
 					>
 						Resume
@@ -40,7 +46,6 @@ export function Hero() {
 						prefetch
 						className={buttonVariants({
 							variant: "secondary",
-							size: "sm",
 						})}
 					>
 						Get in Touch

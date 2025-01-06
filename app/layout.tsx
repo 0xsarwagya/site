@@ -59,7 +59,7 @@ export default function RootLayout({
 					<main className="px-4 md:px-8 lg:px-12 selection:bg-foreground selection:text-background bg-backdrop">
 						<Navbar />
 						{children}
-						<Newsletter />
+						{/* <Newsletter /> */}
 						<Footer />
 					</main>
 				</ThemeProvider>

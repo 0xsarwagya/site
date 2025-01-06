@@ -1,5 +1,6 @@
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -16,7 +17,13 @@ export default async function NotFound() {
 					height={80}
 				/>
 				<span className="text-sm md:text-xs text-muted-foreground">Oops!</span>
-				<CardHeader className="max-w-3xl text-center font-bold text-2xl leading-tight tracking-tight sm:text-3xl sm:leading-tight md:text-4xl md:leading-tight">
+				<CardHeader
+					className={cn(
+						"max-w-4xl text-center font-bold text-3xl leading-tight tracking-tight",
+						"sm:text-4xl sm:leading-tight",
+						"md:text-5xl md:leading-tight",
+					)}
+				>
 					Page Not Found
 				</CardHeader>
 				<CardContent>
@@ -26,7 +33,7 @@ export default async function NotFound() {
 						prefetch
 						className={buttonVariants({
 							variant: "outline",
-							size: "sm",
+							size: "default",
 						})}
 					>
 						Back Home
