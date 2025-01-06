@@ -1,0 +1,58 @@
+---
+title: "User Privacy and Location Handling in Arunya"
+description: "Sharing my experience on how I handled user privacy and location in Arunya."
+date: "01/06/2025"
+---
+
+Building Arunya has been an exciting journey, especially as I’ve worked hard to balance functionality with a strong commitment to user privacy. One of the more challenging areas I faced was how to handle location data. While location-based insights are crucial for analytics, respecting user privacy was always my top priority. In this post, I want to share how Arunya processes location data responsibly while ensuring compliance with privacy standards.
+
+## How I Handled Location Data
+
+### 1. **IP Address Processing**
+Arunya uses the IP address associated with a user's request to determine an approximate location. This location is limited to general country, region, and city data. Here’s what we make sure to do:
+
+- We do **not** collect precise geolocation (such as exact latitude or longitude).
+- We avoid linking personally identifiable information (PII) with the location data, keeping user identities safe.
+
+### 2. **Geolocation Data Sources**
+For geolocation, I chose the MaxMind GeoLite2 database. It’s reliable and provides:
+
+- Approximate country, region, and city information.
+- No precise latitude or longitude that could pinpoint a user’s specific household or street address. This is important for maintaining privacy, and you can check the GeoLite2 README for more details.
+
+#### Licensing Information:
+- **Copyright**: The database and contents are copyright (c) 2025 MaxMind, Inc.
+- **License**: Governed by MaxMind's GeoLite2 End User License Agreement, viewable at [MaxMind EULA](https://www.maxmind.com/en/geolite2/eula).
+- **Third-Party Data**: We also incorporate geographical data from GeoNames under the [Creative Commons Attribution 4.0 License](https://creativecommons.org/licenses/by/4.0/).
+
+### 3. **Request Header Utilization**
+When Arunya is hosted on platforms like Vercel, it makes use of request headers like `x-vercel-ip-country`, `x-vercel-ip-country-region`, and `x-vercel-ip-city`. This method allows us to retrieve location data without processing IP addresses directly, further enhancing privacy. For non-cloud hosting, if these headers aren’t available, we’ll use the MaxMind database as a fallback.
+
+### 4. **Handling Localhost and Reserved IPs**
+Whenever requests come from localhost or private network IPs, Arunya simply defaults to “localhost” for location data, ensuring no personal information is exposed in these cases.
+
+### 5. **Data Minimization and Anonymization**
+Arunya follows the principle of data minimization:
+
+- **Anonymized Data**: IP addresses are never stored directly.
+- **Derived Data**: Only generalized location data (e.g., "Country: Germany, Region: Bavaria, City: Munich") is used for analytics purposes.
+- **No Persistent Tracking**: Location data is processed per session, with no link to any persistent user profiles.
+
+---
+
+## Compliance and Ethical Practices
+
+### 1. **GDPR and CCPA Compliance**
+One of the reasons I built Arunya was to ensure compliance with privacy regulations like the GDPR and CCPA. Here’s how Arunya aligns with these frameworks:
+
+- **Purpose Limitation**: Location data is used exclusively for analytics and never for marketing or profiling purposes.
+- **Data Minimization**: We process only the location data necessary for our analytics.
+- **Transparency**: Users are always informed about how their data is being processed, and they can easily access this information.
+
+### 2. **User Opt-Out**
+Privacy is personal, and that’s why Arunya allows users to opt out of location tracking. Users can enable privacy settings in their browsers or use anonymizing services (e.g., VPNs) to prevent location tracking altogether.
+
+---
+
+## Conclusion
+At the core of Arunya is a commitment to privacy without compromising on functionality. By leveraging anonymized geolocation data and adhering to strict privacy and compliance standards, Arunya ensures that user trust remains a top priority. The road to finding the balance between useful analytics and privacy was challenging, but ultimately, I’m proud of the solution Arunya provides.
