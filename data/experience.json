@@ -1,10 +1,19 @@
 [
+  {
+        "position": "Intern",
+        "company": "Airbus",
+        "location": "Remote",
+        "from": "15/03/2024",
+        "to": 15/06/2025,
+        "url": "https://www.airbus.com/",
+        "description": "Assisted with strategic projects in the Industry Product Engineering department. Helped improve project management and operational processes."
+    },
     {
         "position": "Werkstudent",
         "company": "SAP SE",
         "location": "Sankt Ingbert, Germany",
         "from": "01/08/2024",
-        "to": null,
+        "to": 31/01/2025,
         "url": "https://www.sap.com/",
         "description": "Assisted with strategic projects in the Industry Product Engineering department. Helped improve project management and operational processes."
     },
