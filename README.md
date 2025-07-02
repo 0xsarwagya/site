@@ -4,8 +4,8 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://0xsarwagya.codes">
-    <img src="https://0xsarwagya.codes/memoji.png" alt="Logo" width="80" height="80">
+  <a href="https://sarwagya.is-a.dev/">
+    <img src="https://sarwagya.is-a.dev/memoji.png" alt="Logo" width="80" height="80">
   </a>
 
   <h3 align="center">
