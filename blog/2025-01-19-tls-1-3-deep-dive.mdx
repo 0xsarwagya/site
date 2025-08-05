@@ -1,0 +1,213 @@
+---
+title: "TLS 1.3 Deep Dive: Hardening Your Network Traffic"
+description: "A practitioner-oriented guide to deploying and tuning TLS 1.3 with the latest cipher suites, extensions, and monitoring tips."
+date: "2025-01-19"
+categories: ["Network Security", "TLS", "Cybersecurity"]
+author: "Sarwagya"
+---
+
+# TLS 1.3 Deep Dive: Hardening Your Network Traffic
+
+> TLS 1.3 is the most significant security upgrade in a decade. Here’s how to deploy it securely.
+
+## 1. Cipher Suite Selection
+
+**Mandatory Ciphers**
+- `TLS_AES_256_GCM_SHA384` (preferred)
+- `TLS_CHACHA20_POLY1305_SHA256` (mobile/constrained devices)
+- `TLS_AES_128_GCM_SHA256` (legacy compatibility)
+
+**Deprecated in TLS 1.3**
+- All RSA key exchange
+- CBC mode ciphers
+- SHA-1, MD5 hashes
+- Static RSA and DH key exchange
+
+## 2. Key Exchange Configuration
+
+### Modern (Recommended)
+```nginx
+ssl_ecdh_curve X25519:secp521r1:secp384r1;
+ssl_conf_command Options PrioritizeChaCha;
+```
+
+### Backward Compatibility
+```nginx
+ssl_ecdh_curve X25519:prime256v1:secp384r1;
+ssl_ciphers 'TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES256-GCM-SHA384';
+```
+
+## 3. Session Resumption
+
+### Session Tickets (0-RTT)
+- **Security Risk**: Replay attacks possible
+- **Mitigation**: Use only for idempotent operations
+- **Nginx Config**:
+  ```nginx
+  ssl_session_tickets on;
+  ssl_session_timeout 1d;
+  ssl_session_ticket_key /path/to/ticket.key;
+  ```
+
+### Session IDs (1-RTT)
+- More secure but requires server-side state
+- **Nginx Config**:
+  ```nginx
+  ssl_session_cache shared:SSL:50m;
+  ssl_session_timeout 4h;
+  ```
+
+## 4. Certificate Management
+
+### Certificate Types
+- **ECDSA P-256** (fastest)
+- **RSA 3072-bit** (broadest compatibility)
+- **Hybrid PQC** (future-proofing)
+
+### OCSP Stapling
+
+```nginx
+ssl_stapling on;
+ssl_stapling_verify on;
+ssl_trusted_certificate /path/to/chain.pem;
+resolver 1.1.1.1 1.0.0.1 valid=300s;
+resolver_timeout 5s;
+```
+
+## 5. HTTP/2 and HTTP/3 Considerations
+
+### HTTP/2
+- Requires ALPN
+- Disable HTTP/2 Server Push (deprecated)
+- Configure concurrent streams:
+  ```nginx
+  http2_max_concurrent_streams 128;
+  http2_streams_index_size 64;
+  ```
+
+### HTTP/3 (QUIC)
+- UDP-based, faster handshake
+- Built-in encryption (no need for TCP + TLS)
+- Configure separate UDP listeners
+
+## 6. Security Headers
+
+```nginx
+add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload";
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';";
+```
+
+## 7. Monitoring and Logging
+
+### Nginx Log Format
+```nginx
+log_format tls13 '$remote_addr - $remote_user [$time_local] "$request" '
+                 '$status $body_bytes_sent "$http_referer" '
+                 '"$http_user_agent" $ssl_protocol $ssl_cipher '
+                 '$ssl_curve $ssl_early_data';
+```
+
+### Key Metrics to Monitor
+- Handshake failures by cipher suite
+- TLS 1.2 fallback rates
+- OCSP stapling failures
+- Session resumption rates
+
+## 8. Performance Tuning
+
+### Buffer Sizes
+```nginx
+ssl_buffer_size 16k;
+ssl_session_cache_size 50m;
+ssl_session_tickets on;
+ssl_session_ticket_key /path/to/ticket.key;
+```
+
+### Early Data (0-RTT)
+```nginx
+ssl_early_data on;
+proxy_set_header Early-Data $ssl_early_data;
+```
+
+## 9. Common Pitfalls
+
+1. **Mixed Content**
+   - Upgrade all resources to HTTPS
+   - Use CSP `upgrade-insecure-requests`
+
+2. **Certificate Transparency**
+   - Submit to CT logs
+   - Monitor for unauthorized certs
+
+3. **Key Rotation**
+   - Rotate session ticket keys weekly
+   - Use automated certificate management (e.g., Certbot)
+
+## 10. Testing and Validation
+
+### Tools
+- **SSL Labs**: Comprehensive TLS testing
+- **testssl.sh**: Command-line validation
+- **Mozilla SSL Config Generator**: Configuration templates
+- **OpenSSL**: Manual verification
+
+### Example OpenSSL Commands
+```bash
+# Check TLS 1.3 support
+openssl s_client -connect example.com:443 -tls1_3
+
+# Verify certificate chain
+echo | openssl s_client -showcerts -servername example.com -connect example.com:443 | openssl x509 -noout -text
+```
+
+## Final Configuration Example
+
+```nginx
+# SSL Configuration
+ssl_protocols TLSv1.3;
+ssl_prefer_server_ciphers on;
+ssl_ciphers 'TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256';
+ssl_ecdh_curve X25519:secp521r1:secp384r1;
+ssl_session_timeout 1d;
+ssl_session_cache shared:SSL:50m;
+ssl_session_tickets on;
+ssl_stapling on;
+ssl_stapling_verify on;
+resolver 1.1.1.1 1.0.0.1 valid=300s;
+resolver_timeout 5s;
+
+# Security Headers
+add_header Strict-Transport-Security "max-age=63072000; includeSubdomains; preload";
+add_header X-Content-Type-Options "nosniff" always;
+add_header X-Frame-Options "SAMEORIGIN" always;
+add_header X-XSS-Protection "1; mode=block" always;
+add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';";
+
+# Performance
+ssl_buffer_size 16k;
+ssl_session_ticket_key /path/to/ticket.key;
+ssl_early_data on;
+proxy_set_header Early-Data $ssl_early_data;
+
+# HTTP/2
+http2 on;
+http2_max_concurrent_streams 128;
+http2_streams_index_size 64;
+
+# Logging
+access_log /var/log/nginx/access.log tls13;
+error_log /var/log/nginx/error.log warn;
+```
+
+## Conclusion
+
+TLS 1.3 offers significant security and performance improvements over previous versions. By following these guidelines, you can ensure your implementation is both secure and performant. Regular monitoring and updates are essential to maintain a strong security posture.
+
+## Further Reading
+
+- [RFC 8446: The Transport Layer Security (TLS) Protocol Version 1.3](https://tools.ietf.org/html/rfc8446)
+- [Mozilla SSL Configuration Generator](https://ssl-config.mozilla.org/)
+- [SSL Labs SSL Test](https://www.ssllabs.com/ssltest/)

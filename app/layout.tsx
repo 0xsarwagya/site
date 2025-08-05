@@ -43,7 +43,7 @@ export const metadata: Metadata = {
 		site: "https://0xsarwagya.codes",
 	},
 	verification: {
-		google: "yo2frn-tk1Yi7L-3F7kPWaP6Ub2LA6mNu3TqDteje1w",
+		google: "93PkiS22u-gZl_p6MD3uhan3v9UbUViK-ZcruZ_2l3E",
 	},
 };
 

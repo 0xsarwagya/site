@@ -1,0 +1,107 @@
+---
+title: "Post-Quantum Cryptography: A Readiness Checklist for Startups"
+description: "Practical guidance for preparing your applications, keys, and infrastructure for the coming era of quantum-safe cryptography."
+date: "2025-01-16"
+categories: ["Cryptography", "Post-Quantum", "Cybersecurity"]
+author: "Sarwagya"
+---
+
+# Post-Quantum Cryptography: A Readiness Checklist for Startups
+
+> Quantum computers threaten today’s public-key algorithms. NIST’s new PQC standards are landing soon—are you ready?
+
+## 1. Why PQC Matters Now
+
+- **Shor’s algorithm** breaks RSA and ECDSA once large-scale quantum computers appear.
+- Attackers can *harvest now, decrypt later* (HNDL).
+- Regulators (e.g., NSA CNSA-2.0) already mandate quantum-resistant algorithms for classified use.
+
+## 2. Inventory Your Cryptography
+
+Create a *crypto bill of materials (CBOM)*:
+
+| Asset | Current Alg | Key Size | Expiry |
+|-------|-------------|----------|--------|
+| TLS certs | ECDSA P-256 | 256-bit | 2025-09 |
+| JWT signing | ES256 | 256-bit | N/A |
+| Database encryption | AES-256 | 256-bit | N/A |
+| VPN | RSA-2048 | 2048-bit | 2025-06 |
+
+Focus on RSA/ECDSA/ECDH; symmetric ciphers remain safe (with doubled key size).
+
+## 3. Adopt Hybrid Key Establishment
+
+Hybrid key exchange = classical (X25519) + PQC (e.g., Kyber-768) → combined secret.
+
+```text
+client  ── X25519 ──►
+        ◄─ Kyber768 ── server
+```
+
+Benefits:
+1. Quantum-safe forward secrecy.
+2. Backward compatibility with browsers that only support classical.
+
+### TLS 1.3 + PQC
+
+Use draft RFC `tls-hybrid-design`. Some vendors (Cloudflare, AWS ACM) already issue Kyber hybrids.
+
+## 4. Update Your PKI
+
+1. Generate **composite certificates** (X.509 v3) that store two SPKIs.
+2. Shorten validity ≤ 180 days to limit HNDL risk.
+3. Store PQC CAs on FIPS 140-3 modules that support larger key sizes.
+
+## 5. Hardening Your Supply Chain
+
+- Switch code-signing from ECDSA to Dilithium-3.
+- Verify third-party libraries aren’t hard-coded to P-256 curves.
+- Add `oqsprovider` to OpenSSL builds.
+
+## 6. Crypto-Agility Policies
+
+> *Crypto-agility* = ability to swap algorithms without code change.
+
+Implement via:
+
+- **KMS abstraction layers** (AWS KMS, HashiCorp Vault) that expose “pqc_default”.
+- **Protocol negotiation**—use IETF draft `pq-ssh` for OpenSSH 9.x.
+- **Feature flags** to toggle PQC in CI.
+
+## 7. Testing & Benchmarking
+
+| Alg | Sign ms | Verify ms | Key size |
+|-----|---------|----------|----------|
+| ECDSA P-256 | 0.35 | 0.06 | 64 B |
+| Dilithium-3 | 1.9 | 0.6 | 2.7 kB |
+
+Measure handshake latency (< 100 ms target) and memory (< 16 KB per connection).
+
+## 8. Migration Roadmap
+
+1. **2025 Q1**: Inventory & CBOM.
+2. **2025 Q2**: Hybrid TLS on edge.
+3. **2025 Q3**: PQC code-signing.
+4. **2025 Q4**: Full PQC cert rollout.
+
+## 9. Common Pitfalls
+
+- “Drop-in replacement” assumption—key sizes explode (Dilithium-5 pubkey ≈ 4.5 kB).
+- Insecure randomness sources—use DRBG with health tests.
+- Large handshake packets causing PMTU issues.
+
+## 10. Key Takeaways
+
+- Start **inventory** today; crypto cannot be refactored overnight.
+- Deploy **hybrid key exchange** to gain forward secrecy now.
+- Ensure **crypto-agility** so future parameter tweaks are painless.
+
+## Further Reading
+
+- NIST FIPS-203 Kyber, FIPS-204 Dilithium (draft)
+- ETSI GR ETP 011 v1.1.1 “Migration strategies”
+- Cloudflare “Why hybrid post-quantum is critical”
+
+---
+
+*Prepared by Sarwagya • 16 Jan 2025*

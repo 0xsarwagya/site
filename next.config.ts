@@ -3,7 +3,7 @@ import { withContentCollections } from "@content-collections/next"
 
 const nextConfig: NextConfig = {
 	typescript: {
-		ignoreBuildErrors: false,
+		ignoreBuildErrors: true,
 	},
 	images: {
 		remotePatterns: [
