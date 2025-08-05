@@ -1,0 +1,169 @@
+---
+title: "Shared Sequencing Layer"
+description: "Decentralized transaction ordering"
+date: "2025-05-19"
+categories: ["Blockchain", "Rollups", "Consensus"]
+author: "Sarwagya"
+---
+
+# Shared Sequencing Implementation
+
+## Core Architecture
+
+### 1. Sequencer Set Management
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract SharedSequencer {
+    struct Sequencer {
+        address id;
+        uint256 stake;
+        bool active;
+        uint256 lastActiveBlock;
+    }
+    
+    address[] public sequencerSet;
+    mapping(address => Sequencer) public sequencers;
+    uint256 public minStake = 32 ether;
+    
+    // Join sequencer set
+    function joinSequencerSet() external payable {
+        require(msg.value >= minStake, "Insufficient stake");
+        require(!sequencers[msg.sender].active, "Already a sequencer");
+        
+        sequencerSet.push(msg.sender);
+        sequencers[msg.sender] = Sequencer({
+            id: msg.sender,
+            stake: msg.value,
+            active: true,
+            lastActiveBlock: block.number
+        });
+    }
+    
+    // Propose block
+    function proposeBlock(
+        bytes32 parentHash,
+        bytes32[] calldata transactions,
+        uint256 viewNumber,
+        bytes calldata signature
+    ) external {
+        require(sequencers[msg.sender].active, "Not an active sequencer");
+        require(isSequencerTurn(msg.sender, viewNumber), "Not your turn");
+        
+        // Verify signature
+        bytes32 blockHash = keccak256(abi.encode(parentHash, transactions, viewNumber));
+        require(verifySignature(blockHash, signature, msg.sender), "Invalid signature");
+        
+        // Process block
+        // ...
+    }
+}
+```
+
+## Consensus Protocol
+
+### 1. Leader Election
+
+```rust
+// Leader election using VRF
+fn elect_leader(
+    block_height: u64,
+    sequencer_set: &[AccountId],
+    vrf_output: &[u8],
+) -> AccountId {
+    // Use VRF output to select leader
+    let index = u128::from_le_bytes(vrf_output[..16].try_into().unwrap()) as usize % sequencer_set.len();
+    sequencer_set[index].clone()
+}
+```
+
+### 2. Block Proposal
+
+```solidity
+// Block proposal structure
+struct BlockProposal {
+    bytes32 parentHash;
+    bytes32[] transactions;
+    uint256 viewNumber;
+    address proposer;
+    bytes signature;
+}
+
+// Block finalization
+function finalizeBlock(
+    BlockProposal calldata proposal,
+    bytes[] calldata signatures
+) external {
+    // Verify sufficient signatures
+    require(signatures.length >= requiredSignatures(), "Insufficient signatures");
+    
+    // Verify all signatures
+    for (uint i = 0; i < signatures.length; i++) {
+        address signer = recoverSigner(proposal, signatures[i]);
+        require(sequencers[signer].active, "Invalid signer");
+    }
+    
+    // Finalize block
+    // ...
+}
+```
+
+## Performance Optimizations
+
+### 1. Transaction Pool
+
+```rust
+// Transaction pool implementation
+struct TransactionPool {
+    pending: BTreeMap<u64, Vec<Transaction>>,
+    by_sender: HashMap<Address, Vec<Transaction>>,
+}
+
+impl TransactionPool {
+    // Add transaction to pool
+    fn add_transaction(&mut self, tx: Transaction) -> Result<(), Error> {
+        let nonce = tx.nonce;
+        self.pending.entry(nonce).or_default().push(tx.clone());
+        self.by_sender.entry(tx.sender).or_default().push(tx);
+        Ok(())
+    }
+    
+    // Get next block of transactions
+    fn get_block(&mut self, max_gas: u64) -> Vec<Transaction> {
+        let mut block = Vec::new();
+        let mut gas_used = 0;
+        
+        for (_, txs) in self.pending.iter_mut() {
+            if let Some(tx) = txs.pop() {
+                if gas_used + tx.gas_limit <= max_gas {
+                    gas_used += tx.gas_limit;
+                    block.push(tx);
+                } else {
+                    break;
+                }
+            }
+        }
+        
+        block
+    }
+}
+```
+
+## Security Considerations
+
+### 1. Liveness
+- View change protocol
+- Timeout mechanisms
+- Slashing conditions
+
+### 2. Censorship Resistance
+- Fair ordering
+- MEV protection
+- Transaction privacy
+
+## Resources
+- [Espresso Systems](https://www.espressosys.com/)
+- [Astria](https://astria.org/)
+- [The Graph](https://thegraph.com/)

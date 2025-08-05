@@ -1,0 +1,121 @@
+---
+title: "Cross-Chain Bridge Security"
+description: "Securing assets across blockchain networks"
+date: "2025-04-07"
+categories: ["Blockchain", "Bridges", "Security"]
+author: "Sarwagya"
+---
+
+# Cross-Chain Bridge Security
+
+## Bridge Architectures
+
+### 1. Lock-and-Mint
+
+```solidity
+// Simplified lock-and-mint bridge
+contract LockAndMintBridge {
+    IERC20 public token;
+    address public validator;
+    mapping(bytes32 => bool) public processedTransactions;
+    
+    constructor(address _token, address _validator) {
+        token = IERC20(_token);
+        validator = _validator;
+    }
+    
+    function lock(uint256 amount) external {
+        token.transferFrom(msg.sender, address(this), amount);
+        emit Locked(msg.sender, amount);
+    }
+    
+    function mint(
+        address recipient,
+        uint256 amount,
+        bytes32 transactionHash,
+        bytes calldata signature
+    ) external {
+        require(!processedTransactions[transactionHash], "Already processed");
+        require(verifySignature(recipient, amount, transactionHash, signature), "Invalid signature");
+        
+        processedTransactions[transactionHash] = true;
+        token.mint(recipient, amount);
+    }
+    
+    function verifySignature(
+        address recipient,
+        uint256 amount,
+        bytes32 transactionHash,
+        bytes memory signature
+    ) internal view returns (bool) {
+        bytes32 messageHash = keccak256(abi.encode(recipient, amount, transactionHash));
+        bytes32 ethSignedMessageHash = ECDSA.toEthSignedMessageHash(messageHash);
+        return ECDSA.recover(ethSignedMessageHash, signature) == validator;
+    }
+}
+```
+
+## Security Considerations
+
+### 1. Validator Security
+- Multi-signature requirements
+- Slashing conditions
+- Validator set rotation
+
+### 2. Message Verification
+- Cryptographic signatures
+- Nonce-based replay protection
+- Timestamp validation
+
+## Common Attack Vectors
+
+1. **Signature Replay**
+   ```solidity
+   // Prevent replay attacks with nonce
+   mapping(address => uint256) public nonces;
+   
+   function verifyWithNonce(
+       address user,
+       uint256 amount,
+       uint256 nonce,
+       bytes memory signature
+   ) internal {
+       require(nonce == nonces[user] + 1, "Invalid nonce");
+       nonces[user]++;
+       // Verify signature...
+   }
+   ```
+
+2. **Frontrunning**
+   - Use commit-reveal schemes
+   - Batch transactions
+   - Minimum delay for critical operations
+
+## Monitoring and Response
+
+1. **Anomaly Detection**
+   - Unusual withdrawal patterns
+   - Sudden volume changes
+   - Failed transactions
+
+2. **Emergency Controls**
+   - Circuit breakers
+   - Pause functionality
+   - Multi-sig requirements
+
+## Best Practices
+
+1. **For Users**
+   - Verify bridge contracts
+   - Check liquidity depth
+   - Monitor bridge status
+
+2. **For Developers**
+   - Regular security audits
+   - Bug bounty programs
+   - Time-locked upgrades
+
+## Resources
+- [Chainlink CCIP](https://chain.link/cross-chain)
+- [LayerZero Docs](https://layerzero.network/)
+- [Wormhole Security](https://wormhole.com/security/)

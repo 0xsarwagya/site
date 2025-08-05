@@ -1,0 +1,196 @@
+---
+title: "ZK Account Abstraction"
+description: "Privacy-preserving smart accounts"
+date: "2025-06-13"
+categories: ["Ethereum", "Account-Abstraction", "ZK-Proofs"]
+author: "Sarwagya"
+---
+
+# ZK Account Abstraction
+
+## Core Contract
+
+### 1. Account Abstraction with ZK
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract ZKAccount {
+    struct Transaction {
+        address to;
+        uint256 value;
+        bytes data;
+        uint256 nonce;
+        uint256 validUntil;
+    }
+    
+    mapping(address => uint256) public nonces;
+    mapping(address => bytes32) public accountCommitments;
+    
+    // Execute transaction with ZK proof
+    function execute(
+        Transaction calldata txData,
+        bytes calldata zkProof
+    ) external {
+        // Verify transaction is not expired
+        require(block.timestamp <= txData.validUntil, "Transaction expired");
+        
+        // Verify nonce
+        require(txData.nonce == nonces[msg.sender] + 1, "Invalid nonce");
+        
+        // Verify ZK proof
+        require(
+            verifyZKProof(
+                msg.sender,
+                txData,
+                accountCommitments[msg.sender],
+                zkProof
+            ),
+            "Invalid proof"
+        );
+        
+        // Update nonce
+        nonces[msg.sender]++;
+        
+        // Execute transaction
+        (bool success, ) = txData.to.call{value: txData.value}(txData.data);
+        require(success, "Execution failed");
+    }
+    
+    // Register account with commitment
+    function register(bytes32 commitment) external {
+        accountCommitments[msg.sender] = commitment;
+    }
+}
+```
+
+## Circuit Design
+
+### 1. Transaction Validity
+
+```circom
+template TransactionValidity() {
+    signal input accountCommitment;
+    signal input transactionHash;
+    signal input signature;
+    
+    // Verify signature over transaction
+    component sigVerifier = ECDSAVerify();
+    sigVerifier.message <== transactionHash;
+    sigVerifier.signature <== signature;
+    sigVerifier.pubKey <== accountCommitment;
+    
+    // Ensure signature is valid
+    sigVerifier.out === 1;
+}
+```
+
+## Session Keys
+
+### 1. Permission Management
+
+```solidity
+contract SessionKeyManager {
+    struct Session {
+        address key;
+        uint256 validUntil;
+        uint256 maxValue;
+        address[] allowedContracts;
+    }
+    
+    mapping(address => Session) public sessions;
+    
+    // Create session key
+    function createSession(
+        address key,
+        uint256 duration,
+        uint256 maxValue,
+        address[] calldata allowedContracts
+    ) external {
+        sessions[msg.sender] = Session({
+            key: key,
+            validUntil: block.timestamp + duration,
+            maxValue: maxValue,
+            allowedContracts: allowedContracts
+        });
+    }
+    
+    // Verify session key
+    function verifySession(
+        address account,
+        address to,
+        uint256 value
+    ) external view returns (bool) {
+        Session memory session = sessions[account];
+        
+        // Check session is valid
+        if (block.timestamp > session.validUntil) {
+            return false;
+        }
+        
+        // Check value limit
+        if (value > session.maxValue) {
+            return false;
+        }
+        
+        // Check contract is allowed
+        if (session.allowedContracts.length > 0) {
+            bool allowed = false;
+            for (uint i = 0; i < session.allowedContracts.length; i++) {
+                if (session.allowedContracts[i] == to) {
+                    allowed = true;
+                    break;
+                }
+            }
+            if (!allowed) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+}
+```
+
+## Privacy Features
+
+### 1. Stealth Addresses
+
+```solidity
+// Generate stealth address
+function generateStealthAddress(
+    bytes32 viewingKey,
+    bytes32 spendingKey
+) public pure returns (address) {
+    bytes32 sharedSecret = keccak256(abi.encodePacked(viewingKey, spendingKey));
+    return address(uint160(uint256(keccak256(abi.encodePacked(sharedSecret)))));
+}
+```
+
+## Gas Optimization
+
+### 1. Batch Transactions
+
+```solidity
+// Batch transaction execution
+function executeBatch(
+    Transaction[] calldata transactions,
+    bytes calldata zkProof
+) external {
+    // Verify batch proof
+    require(verifyBatchProof(msg.sender, transactions, zkProof), "Invalid batch");
+    
+    // Execute all transactions
+    for (uint i = 0; i < transactions.length; i++) {
+        Transaction calldata txData = transactions[i];
+        (bool success, ) = txData.to.call{value: txData.value}(txData.data);
+        require(success, "Transaction failed");
+    }
+}
+```
+
+## Resources
+- [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337)
+- [Argent X](https://www.argent.xyz/)
+- [zkSync Account Abstraction](https://zksync.io/)

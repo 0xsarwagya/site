@@ -1,0 +1,161 @@
+---
+title: "Optimistic Rollup Security"
+description: "Fraud proofs and challenge mechanisms"
+date: "2025-03-29"
+categories: ["Ethereum", "Scaling", "Rollups"]
+author: "Sarwagya"
+---
+
+# Optimistic Rollup Implementation
+
+## Core Components
+
+### 1. Rollup Contract
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract OptimisticRollup {
+    struct StateUpdate {
+        bytes32 stateRoot;
+        uint256 batchIndex;
+        uint256 timestamp;
+        address submitter;
+        bool challenged;
+    }
+    
+    StateUpdate[] public stateUpdates;
+    uint256 public challengePeriod = 7 days;
+    
+    // Submit a new state update
+    function submitStateUpdate(bytes32 _newStateRoot) external {
+        stateUpdates.push(StateUpdate({
+            stateRoot: _newStateRoot,
+            batchIndex: stateUpdates.length,
+            timestamp: block.timestamp,
+            submitter: msg.sender,
+            challenged: false
+        }));
+    }
+    
+    // Challenge a state update
+    function challengeStateUpdate(
+        uint256 _updateIndex,
+        bytes calldata _fraudProof
+    ) external {
+        StateUpdate storage update = stateUpdates[_updateIndex];
+        require(!update.challenged, "Already challenged");
+        require(block.timestamp < update.timestamp + challengePeriod, "Challenge period expired");
+        
+        if (isValidFraudProof(_fraudProof)) {
+            // Revert state
+            delete stateUpdates[_updateIndex];
+            // Slash bond
+            // ...
+        } else {
+            update.challenged = true;
+        }
+    }
+}
+```
+
+## Fraud Proof System
+
+### 1. Interactive Verification
+
+```solidity
+// Interactive verification game
+contract VerificationGame {
+    enum ChallengeStatus { Pending, ChallengerWins, DefenderWins }
+    
+    struct Challenge {
+        address challenger;
+        address defender;
+        uint256 step;
+        bytes32[] stateHashes;
+        ChallengeStatus status;
+    }
+    
+    mapping(bytes32 => Challenge) public challenges;
+    
+    function startChallenge(
+        bytes32 _stateRoot,
+        bytes32[] calldata _stateHashes
+    ) external {
+        bytes32 challengeId = keccak256(abi.encode(_stateRoot, msg.sender));
+        challenges[challengeId] = Challenge({
+            challenger: msg.sender,
+            defender: address(0), // Will be set by defender
+            step: 0,
+            stateHashes: _stateHashes,
+            status: ChallengeStatus.Pending
+        });
+    }
+    
+    function respondToChallenge(
+        bytes32 _challengeId,
+        uint256 _step,
+        bytes calldata _proof
+    ) external {
+        Challenge storage challenge = challenges[_challengeId];
+        require(challenge.status == ChallengeStatus.Pending, "Challenge resolved");
+        
+        if (challenge.defender == address(0)) {
+            challenge.defender = msg.sender;
+        }
+        
+        // Verify proof and update challenge state
+        // ...
+    }
+}
+```
+
+## Data Availability
+
+### 1. Data Submission
+
+```solidity
+// Data availability contract
+contract DataAvailability {
+    event DataSubmitted(uint256 indexed batchId, bytes data);
+    
+    function submitData(bytes calldata _data) external {
+        uint256 batchId = block.number;
+        emit DataSubmitted(batchId, _data);
+    }
+    
+    function getDataHash(uint256 _batchId) external view returns (bytes32) {
+        return blockhash(_batchId);
+    }
+}
+```
+
+## Security Considerations
+
+### 1. Challenge Period
+- Minimum 7 days for L1 finality
+- Economic incentives for challenges
+- Emergency escape hatches
+
+### 2. Withdrawal Safety
+- Delayed withdrawals
+- Dispute resolution
+- Emergency exits
+
+## Performance Optimizations
+
+1. **State Compression**
+   - Sparse Merkle trees
+   - Snapshotting
+   - State diffs
+
+2. **Batch Processing**
+   - Aggregated signatures
+   - Compressed calldata
+   - Efficient state updates
+
+## Resources
+- [Optimism Documentation](https://community.optimism.io/)
+- [Arbitrum Developer Docs](https://developer.offchainlabs.com/)
+- [Ethereum Rollup Standards](https://eips.ethereum.org/EIPS/eip-4844)

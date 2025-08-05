@@ -1,0 +1,190 @@
+---
+title: "Cosmos SDK Security"
+description: "Building secure blockchains with Cosmos SDK"
+date: "2025-03-23"
+categories: ["Blockchain", "Cosmos", "Security"]
+author: "Sarwagya"
+---
+
+# Cosmos SDK Security Best Practices
+
+## Module Security
+
+### 1. Keeper Pattern
+
+```go
+// Bank keeper example
+type Keeper struct {
+    storeKey sdk.StoreKey
+    cdc      codec.BinaryCodec
+    
+    // Other keepers
+    accountKeeper types.AccountKeeper
+    
+    // Router for handling messages
+    router *baseapp.MsgServiceRouter
+}
+
+// NewKeeper creates a new bank Keeper
+func NewKeeper(
+    cdc codec.BinaryCodec,
+    storeKey sdk.StoreKey,
+    ak types.AccountKeeper,
+) Keeper {
+    return Keeper{
+        cdc:           cdc,
+        storeKey:      storeKey,
+        accountKeeper: ak,
+    }
+}
+```
+
+### 2. Message Validation
+
+```go
+// ValidateBasic for custom message type
+func (msg MsgSend) ValidateBasic() error {
+    _, err := sdk.AccAddressFromBech32(msg.FromAddress)
+    if err != nil {
+        return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid from address (%s)", err)
+    }
+    
+    _, err = sdk.AccAddressFromBech32(msg.ToAddress)
+    if err != nil {
+        return sdkerrors.Wrapf(sdkerrors.ErrInvalidAddress, "invalid to address (%s)", err)
+    }
+    
+    if !msg.Amount.IsValid() {
+        return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, msg.Amount.String())
+    }
+    
+    if !msg.Amount.IsAllPositive() {
+        return sdkerrors.Wrap(sdkerrors.ErrInvalidCoins, msg.Amount.String())
+    }
+    
+    return nil
+}
+```
+
+## Common Vulnerabilities
+
+1. **Infinite Minting**
+   ```go
+   // Always check sender permissions
+   if !k.bankKeeper.HasSupply(ctx, msg.Denom) {
+       return nil, sdkerrors.Wrap(types.ErrInvalidDenom, msg.Denom)
+   }
+   ```
+
+2. **Replay Attacks**
+   ```go
+   // Include chain ID in signatures
+   signBytes := types.ModuleCdc.MustMarshalJSON(
+       &types.StdSignDoc{
+           ChainID:       chainID,
+           AccountNumber: accNum,
+           Sequence:      sequence,
+           // ...
+       },
+   )
+   ```
+
+3. **State Machine Bugs**
+   ```go
+   // Use cache context for simulation
+   cacheCtx, _ := ctx.CacheContext()
+   if err := k.DoSomething(cacheCtx, msg); err != nil {
+       return nil, err
+   }
+   ```
+
+## IBC Security
+
+### 1. Channel Handshake
+
+```go
+// OnChanOpenInit callback
+func (k Keeper) OnChanOpenInit(
+    ctx sdk.Context,
+    order channeltypes.Order,
+    connectionHops []string,
+    portID string,
+    channelID string,
+    chanCap *capabilitytypes.Capability,
+    counterparty channeltypes.Counterparty,
+    version string,
+) (string, error) {
+    // Validate parameters
+    if order != channeltypes.ORDERED {
+        return "", sdkerrors.Wrapf(
+            channeltypes.ErrInvalidChannelOrdering,
+            "expected %s channel, got %s",
+            channeltypes.ORDERED,
+            order,
+        )
+    }
+    
+    // Additional validation...
+    
+    return version, nil
+}
+```
+
+### 2. Packet Validation
+
+```go
+// OnRecvPacket callback
+func (k Keeper) OnRecvPacket(
+    ctx sdk.Context,
+    packet channeltypes.Packet,
+) (*sdk.Result, []byte, error) {
+    var data types.CustomPacketData
+    if err := types.ModuleCdc.UnmarshalJSON(packet.GetData(), &data); err != nil {
+        return nil, nil, sdkerrors.Wrap(
+            sdkerrors.ErrInvalidRequest,
+            "cannot unmarshal packet data",
+        )
+    }
+    
+    // Validate packet data
+    if err := data.ValidateBasic(); err != nil {
+        return nil, nil, err
+    }
+    
+    // Process packet...
+    
+    return &sdk.Result{Events: ctx.EventManager().Events()}, nil, nil
+}
+```
+
+## Testing Strategy
+
+1. **Unit Tests**
+   ```go
+   func TestKeeper_SendCoins(t *testing.T) {
+       app := simapp.Setup(false)
+       ctx := app.BaseApp.NewContext(false, tmproto.Header{})
+       
+       // Test cases...
+   }
+   ```
+
+2. **Integration Tests**
+   ```go
+   func TestIBCTransfer(t *testing.T) {
+       // Setup IBC test suite
+       suite.Run(t, NewIBCTestSuite(NewTestSuite()))
+   }
+   ```
+
+3. **Fuzz Testing**
+   ```go
+   func FuzzKeeper(f *testing.F) {
+       // Fuzz test cases...
+   }
+   ```
+
+## Resources
+- [Cosmos SDK Security](https://docs.cosmos.network/main/basics/security.html)
+- [IBC Specification](https://github.com/cosmos/ibc)
+- [Cosmos SDK Testing](https://docs.cosmos.network/main/building-modules/testing.html)

@@ -1,0 +1,115 @@
+---
+title: "Cross-Shard Atomic Swaps"
+description: "Atomic transactions across shards"
+date: "2025-06-07"
+categories: ["Blockchain", "Sharding", "Atomic-Swaps"]
+author: "Sarwagya"
+---
+
+# Cross-Shard Atomic Swaps
+
+## Core Protocol
+
+### 1. Swap Contract
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract CrossShardSwap {
+    struct Swap {
+        address initiator;
+        address participant;
+        uint256 amountA;
+        uint256 amountB;
+        uint256 expiry;
+        bool completed;
+        bool cancelled;
+    }
+    
+    mapping(bytes32 => Swap) public swaps;
+    
+    // Initiate swap
+    function initiateSwap(
+        bytes32 swapId,
+        address participant,
+        uint256 amountA,
+        uint256 amountB,
+        uint256 expiry
+    ) external payable {
+        require(swaps[swapId].initiator == address(0), "Swap exists");
+        require(msg.value == amountA, "Incorrect amount");
+        
+        swaps[swapId] = Swap({
+            initiator: msg.sender,
+            participant: participant,
+            amountA: amountA,
+            amountB: amountB,
+            expiry: block.timestamp + expiry,
+            completed: false,
+            cancelled: false
+        });
+    }
+    
+    // Complete swap
+    function completeSwap(bytes32 swapId) external payable {
+        Swap storage swap = swaps[swapId];
+        require(!swap.completed, "Already completed");
+        require(!swap.cancelled, "Swap cancelled");
+        require(block.timestamp < swap.expiry, "Expired");
+        require(msg.sender == swap.participant, "Not participant");
+        require(msg.value == swap.amountB, "Incorrect amount");
+        
+        // Transfer funds
+        payable(swap.initiator).transfer(swap.amountB);
+        payable(swap.participant).transfer(swap.amountA);
+        
+        swap.completed = true;
+    }
+    
+    // Cancel swap
+    function cancelSwap(bytes32 swapId) external {
+        Swap storage swap = swaps[swapId];
+        require(msg.sender == swap.initiator, "Not initiator");
+        require(!swap.completed, "Already completed");
+        require(block.timestamp >= swap.expiry, "Not expired");
+        
+        // Return funds to initiator
+        payable(swap.initiator).transfer(swap.amountA);
+        
+        swap.cancelled = true;
+    }
+}
+```
+
+## Cross-Chain Communication
+
+### 1. Light Client Verification
+
+```solidity
+// Verify cross-shard transaction
+function verifyCrossShardTx(
+    bytes32 txHash,
+    bytes32[] calldata proof,
+    bytes32 root
+) public pure returns (bool) {
+    return verifyMerkleProof(root, txHash, proof);
+}
+```
+
+## Security Considerations
+
+### 1. Time Locks
+- HTLC-style timeouts
+- Penalty mechanisms
+- Dispute resolution
+
+### 2. Data Availability
+- Cross-shard state proofs
+- Fraud proofs
+- Light client sync
+
+## Resources
+- [Ethereum Sharding](https://ethereum.org/en/upgrades/sharding/)
+- [NEAR Protocol](https://near.org/)
+- [Cosmos IBC](https://ibcprotocol.org/)

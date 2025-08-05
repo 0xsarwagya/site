@@ -1,0 +1,105 @@
+---
+title: "ZK-STARKs vs ZK-SNARKs"
+description: "Comparing zero-knowledge proof systems"
+date: "2025-03-14"
+categories: ["Cryptography", "Zero-Knowledge", "Blockchain"]
+author: "Sarwagya"
+---
+
+# ZK-Proof Systems Comparison
+
+## Core Differences
+
+| Feature          | ZK-SNARKs                  | ZK-STARKs                  |
+|------------------|----------------------------|----------------------------|
+| Trusted Setup   | Required                   | Not required               |
+| Proof Size      | ~200 bytes                 | ~100KB                     |
+| Verification    | Faster                     | Slower                     |
+| Post-Quantum    | No                         | Yes                        |
+| Scalability     | Linear proof generation    | Quasilinear                |
+| Security        | Relies on assumptions      | Information-theoretic      |
+
+## Implementation Example
+
+### ZK-SNARK with Circom
+
+```circom
+// Simple SNARK circuit
+pragma circom 2.0.0;
+
+template RangeProof() {
+    signal input in;
+    signal output out;
+    
+    // Prove 0 <= in < 100
+    in <== 100;
+    out <== 1;
+}
+
+component main = RangeProof();
+```
+
+### ZK-STARK with Cairo
+
+```cairo
+// Simple STARK program
+%builtins output range_check
+
+func main(output res: felt*, range_check_ptr) -> (res: felt*) {
+    // Prove knowledge of x where x² = 25
+    let x = 5;
+    assert x * x = 25;
+    
+    // Range check
+    %{
+        assert 0 <= ids.x < 10
+    %}
+    
+    return (res=res);
+}
+```
+
+## Performance Benchmarks
+
+1. **Proof Generation**
+   - SNARKs: 100-500ms
+   - STARKs: 1-5s
+
+2. **Verification**
+   - SNARKs: 5-50ms
+   - STARKs: 10-100ms
+
+3. **Memory Usage**
+   - SNARKs: Low (MBs)
+   - STARKs: High (GBs)
+
+## Use Case Analysis
+
+### When to Use SNARKs
+- Mobile applications
+- On-chain verification
+- Bandwidth-constrained environments
+
+### When to Use STARKs
+- Quantum resistance needed
+- No trusted setup desired
+- Large-scale computations
+
+## Security Considerations
+
+1. **Trusted Setup**
+   - SNARKs require a trusted setup ceremony
+   - STARKs are transparent
+
+2. **Cryptographic Assumptions**
+   - SNARKs rely on elliptic curves
+   - STARKs use hash functions
+
+3. **Attack Vectors**
+   - SNARKs: Subgroup attacks
+   - STARKs: Hash function collisions
+
+## Resources
+- [StarkWare Docs](https://starkware.co/stark/)
+- [zk-SNARKs in a Nutshell](https://chriseth.github.io/notes/articles/zksnarks/zksnarks.pdf)
+- [Cairo Documentation](https://www.cairo-lang.org/docs/)

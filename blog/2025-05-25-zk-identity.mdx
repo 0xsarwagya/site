@@ -1,0 +1,165 @@
+---
+title: "Decentralized Identity with ZK"
+description: "Self-sovereign identity solutions"
+date: "2025-05-25"
+categories: ["Blockchain", "Identity", "ZK-Proofs"]
+author: "Sarwagya"
+---
+
+# ZK Identity Implementation
+
+## Core Components
+
+### 1. Identity Contract
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract ZKIdentity {
+    struct Identity {
+        bytes32 commitment;
+        uint256 createdAt;
+        bool revoked;
+    }
+    
+    mapping(address => Identity) public identities;
+    
+    // Register new identity
+    function registerIdentity(bytes32 _commitment) external {
+        require(identities[msg.sender].commitment == 0, "Identity exists");
+        
+        identities[msg.sender] = Identity({
+            commitment: _commitment,
+            createdAt: block.timestamp,
+            revoked: false
+        });
+    }
+    
+    // Verify ZK proof
+    function verifyProof(
+        address user,
+        bytes calldata proof,
+        bytes32 publicInput
+    ) external view returns (bool) {
+        Identity memory identity = identities[user];
+        require(!identity.revoked, "Identity revoked");
+        
+        return verifyZKProof(identity.commitment, proof, publicInput);
+    }
+}
+```
+
+## Credential System
+
+### 1. Verifiable Credentials
+
+```typescript
+interface VerifiableCredential {
+    "@context": string[];
+    type: string[];
+    issuer: string;
+    issuanceDate: string;
+    credentialSubject: {
+        id: string;
+        [key: string]: any;
+    };
+    proof: {
+        type: string;
+        created: string;
+        proofPurpose: string;
+        verificationMethod: string;
+        jws: string;
+    };
+}
+
+// Issue credential
+async function issueCredential(
+    subject: string,
+    claims: Record<string, any>,
+    privateKey: string
+): Promise<VerifiableCredential> {
+    // Implementation
+}
+```
+
+## Circuit Design
+
+### 1. Age Verification
+
+```circom
+template AgeVerifier(minAge) {
+    signal input birthYear;
+    signal input currentYear;
+    signal output isOverMinAge;
+    
+    // Calculate age
+    signal age = currentYear - birthYear;
+    
+    // Check if age >= minAge
+    isOverMinAge <-- (age >= minAge) ? 1 : 0;
+    
+    // Ensure binary output
+    isOverMinAge * (isOverMinAge - 1) === 0;
+}
+```
+
+## Privacy Features
+
+### 1. Selective Disclosure
+
+```typescript
+// Selective disclosure proof
+async function createSelectiveDisclosure(
+    credential: VerifiableCredential,
+    revealFields: string[],
+    privateKey: string
+) {
+    // Create proof for selected fields
+    const proof = await createZKProof({
+        credential,
+        revealFields,
+        privateKey
+    });
+    
+    return {
+        revealedFields: pick(credential.credentialSubject, revealFields),
+        proof
+    };
+}
+```
+
+## Integration
+
+### 1. Verifier Contract
+
+```solidity
+// Verifier contract for credentials
+contract CredentialVerifier {
+    function verifyCredential(
+        address issuer,
+        bytes32 credentialHash,
+        bytes calldata proof
+    ) external view returns (bool) {
+        // Verify credential proof
+        return verifyCredentialProof(issuer, credentialHash, proof);
+    }
+}
+```
+
+## Security Considerations
+
+### 1. Revocation
+- On-chain revocation registry
+- Time-based expiration
+- Credential status lists
+
+### 2. Key Management
+- HD wallet integration
+- Social recovery
+- Multi-factor authentication
+
+## Resources
+- [DID Specification](https://www.w3.org/TR/did-core/)
+- [Veramo Framework](https://veramo.io/)
+- [Sismo Protocol](https://sismo.io/)

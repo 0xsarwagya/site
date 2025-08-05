@@ -1,0 +1,135 @@
+---
+title: "Privacy Pools Implementation"
+description: "Privacy-preserving transaction pools"
+date: "2025-04-13"
+categories: ["Blockchain", "Privacy", "Zero-Knowledge"]
+author: "Sarwagya"
+---
+
+# Privacy Pools with Zero-Knowledge Proofs
+
+## Core Concepts
+
+Privacy pools enable private transactions while maintaining compliance through selective disclosure:
+
+1. **Deposits**: Users deposit funds into a shared pool
+2. **Withdrawals**: Users withdraw to new addresses with ZK proofs
+3. **Selective Disclosure**: Users can prove transaction history without revealing all details
+
+## Implementation with Semaphore
+
+### 1. Setup
+
+```typescript
+import { Semaphore, Identity } from '@semaphore-protocol/identity';
+import { Group } from '@semaphore-protocol/group';
+
+// User generates identity
+const identity = new Identity();
+const trapdoor = identity.getTrapdoor();
+const nullifier = identity.getNullifier();
+
+// Create a group for the pool
+const group = new Group(1); // Group ID 1
+```
+
+### 2. Deposit
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract PrivacyPool {
+    using Pairing for *;
+    
+    struct Deposit {
+        uint256 commitment;
+        uint256 timestamp;
+    }
+    
+    mapping(uint256 => bool) public nullifierHashes;
+    Deposit[] public deposits;
+    
+    function deposit(uint256 _commitment) external payable {
+        require(msg.value > 0, "Must send ETH");
+        deposits.push(Deposit(_commitment, block.timestamp));
+        emit Deposited(_commitment, deposits.length - 1);
+    }
+}
+```
+
+### 3. Withdraw with ZK Proof
+
+```typescript
+// Generate proof
+const wasmFilePath = './semaphore.wasm';
+const finalZkeyPath = './semaphore_final.zkey';
+
+const { proof, publicSignals } = await Semaphore.genProof(
+    identity,
+    group,
+    externalNullifier,
+    signal,
+    {
+        wasmFilePath,
+        zkeyFilePath: finalZkeyPath
+    }
+);
+
+// Submit to contract
+await privacyPool.withdraw(
+    proof.a,
+    proof.b,
+    proof.c,
+    publicSignals
+);
+```
+
+## Security Considerations
+
+### 1. Anonymity Set
+- Larger pools provide better privacy
+- Minimum pool size requirements
+- Monitoring for pool health
+
+### 2. Compliance
+- Optional KYC integration
+- Regulatory reporting tools
+- Audit trails for authorized entities
+
+## Performance Optimizations
+
+1. **Batch Processing**
+   ```solidity
+   function batchDeposit(
+       uint256[] calldata _commitments
+   ) external payable {
+       require(msg.value == _commitments.length * 1 ether);
+       
+       for (uint i = 0; i < _commitments.length; i++) {
+           deposits.push(Deposit(_commitments[i], block.timestamp));
+       }
+   }
+   ```
+
+2. **Gas Efficiency**
+   - Use of precompiles
+   - Optimized proof verification
+   - Batch verifications
+
+## Use Cases
+
+1. **Private Transactions**
+   - Hide transaction amounts
+   - Obfuscate sender/receiver
+   - Maintain auditability
+
+2. **Voting Systems**
+   - Private voting
+   - Proof of membership
+   - Sybil resistance
+
+## Resources
+- [Semaphore Documentation](https://semaphore.appliedzkp.org/)
+- [Tornado Cash](https://tornado.cash/)
+- [Zero-Knowledge Proofs](https://z.cash/technology/)

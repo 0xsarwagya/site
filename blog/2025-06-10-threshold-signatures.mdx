@@ -1,0 +1,141 @@
+---
+title: "Threshold Signature Schemes"
+description: "Distributed key generation and signing"
+date: "2025-06-10"
+categories: ["Cryptography", "MPC", "Threshold-Signatures"]
+author: "Sarwagya"
+---
+
+# Threshold Signature Implementation
+
+## Distributed Key Generation
+
+### 1. Key Share Generation
+
+```python
+# Simplified DKG using Feldman's VSS
+class DKG:
+    def __init__(self, threshold, total_parties):
+        self.threshold = threshold
+        self.total_parties = total_parties
+        self.poly = self._generate_polynomial(threshold)
+        
+    def _generate_polynomial(self, degree):
+        # Generate random polynomial coefficients
+        return [secrets.randbelow(CURVE_ORDER) for _ in range(degree + 1)]
+    
+    def get_share(self, party_id):
+        # Evaluate polynomial at x=party_id
+        share = 0
+        for i, coeff in enumerate(self.poly):
+            share = (share + coeff * pow(party_id, i, CURVE_ORDER)) % CURVE_ORDER
+        return share
+    
+    def get_public_key(self):
+        # Public key is g^secret
+        return G * self.poly[0]
+    
+    def get_verification_values(self):
+        # Commitments to coefficients
+        return [G * coeff for coeff in self.poly]
+```
+
+## Threshold Signing
+
+### 1. Signature Generation
+
+```python
+class ThresholdSigner:
+    def __init__(self, threshold, total_parties, party_id, secret_share):
+        self.threshold = threshold
+        self.total_parties = total_parties
+        self.party_id = party_id
+        self.secret_share = secret_share
+        
+    def sign_share(self, message):
+        # Generate nonce
+        k = secrets.randbelow(CURVE_ORDER)
+        R = G * k
+        
+        # Compute challenge
+        e = self._hash_to_int(message, R)
+        
+        # Compute signature share
+        s_share = (k + (self.secret_share * e)) % CURVE_ORDER
+        
+        return {
+            'R': R,
+            's_share': s_share,
+            'party_id': self.party_id
+        }
+    
+    def combine_signatures(self, signature_shares):
+        # Lagrange interpolation to combine shares
+        s = 0
+        
+        for share in signature_shares:
+            # Compute Lagrange coefficient
+            l = self._lagrange_coefficient(share['party_id'], signature_shares)
+            
+            # Add weighted share
+            s = (s + (share['s_share'] * l)) % CURVE_ORDER
+            
+        # All shares should have the same R
+        R = signature_shares[0]['R']
+        
+        return (R, s)
+    
+    def _lagrange_coefficient(self, i, shares):
+        # Compute Lagrange coefficient for share i
+        result = 1
+        
+        for share in shares:
+            j = share['party_id']
+            if i != j:
+                # (0 - j) / (i - j)
+                numerator = (-j) % CURVE_ORDER
+                denominator = (i - j) % CURVE_ORDER
+                inv_denominator = pow(denominator, -1, CURVE_ORDER)
+                result = (result * numerator * inv_denominator) % CURVE_ORDER
+                
+        return result
+```
+
+## Security Considerations
+
+### 1. Proactive Secret Sharing
+- Periodic re-sharing of secret shares
+- Refresh protocol
+- Key rotation
+
+### 2. Malicious Behavior
+- Zero-knowledge proofs of correctness
+- Complaint mechanism
+- Recovery procedures
+
+## Performance Optimizations
+
+### 1. Batch Verification
+
+```python
+def batch_verify(signatures, messages, public_keys):
+    # Aggregate signatures
+    R_agg = sum((s[0] for s in signatures), G * 0)
+    s_agg = sum((s[1] for s in signatures), 0) % CURVE_ORDER
+    
+    # Compute aggregated public key
+    P_agg = sum(public_keys, G * 0)
+    
+    # Compute aggregated challenge
+    e_agg = 0
+    for msg, (R, _) in zip(messages, signatures):
+        e_agg = (e_agg + _hash_to_int(msg, R)) % CURVE_ORDER
+    
+    # Verify aggregated signature
+    return G * s_agg == R_agg + (P_agg * e_agg)
+```
+
+## Resources
+- [GG20 Paper](https://eprint.iacr.org/2020/540)
+- [tss-lib](https://github.com/binance-chain/tss-lib)
+- [FROST](https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/)

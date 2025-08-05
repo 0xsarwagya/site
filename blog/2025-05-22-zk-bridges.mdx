@@ -1,0 +1,190 @@
+---
+title: "ZK Bridge Architecture"
+description: "Trustless cross-chain bridges"
+date: "2025-05-22"
+categories: ["Blockchain", "Bridges", "ZK-Proofs"]
+author: "Sarwagya"
+---
+
+# ZK Bridge Implementation
+
+## Core Components
+
+### 1. Light Client Verification
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract ZKBridge {
+    struct Header {
+        bytes32 parentHash;
+        bytes32 stateRoot;
+        uint256 blockNumber;
+        bytes32 transactionsRoot;
+        bytes32 receiptsRoot;
+    }
+    
+    mapping(uint256 => Header) public headers;
+    
+    // Submit block header with ZK proof
+    function submitBlock(
+        Header calldata header,
+        bytes calldata proof
+    ) external {
+        // Verify ZK proof of header validity
+        require(verifyHeaderProof(header, proof), "Invalid proof");
+        
+        // Store header
+        headers[header.blockNumber] = header;
+    }
+    
+    // Verify transaction inclusion
+    function verifyTransaction(
+        uint256 blockNumber,
+        bytes32 txHash,
+        bytes calldata proof
+    ) external view returns (bool) {
+        Header storage header = headers[blockNumber];
+        return verifyMerkleProof(
+            header.transactionsRoot,
+            txHash,
+            proof
+        );
+    }
+}
+```
+
+## Cross-Chain Messaging
+
+### 1. Message Passing
+
+```solidity
+// Message structure
+struct Message {
+    address sender;
+    address target;
+    uint256 amount;
+    bytes data;
+    uint256 nonce;
+    uint256 chainId;
+}
+
+// Message verification
+function verifyMessage(
+    Message calldata message,
+    bytes calldata signature
+) internal view returns (bool) {
+    bytes32 messageHash = keccak256(
+        abi.encodePacked(
+            "\x19Ethereum Signed Message:\n32",
+            keccak256(
+                abi.encode(
+                    message.sender,
+                    message.target,
+                    message.amount,
+                    message.data,
+                    message.nonce,
+                    message.chainId
+                )
+            )
+        )
+    );
+    
+    return recoverSigner(messageHash, signature) == message.sender;
+}
+```
+
+## Circuit Design
+
+### 1. State Transition Verification
+
+```circom
+template BridgeStateTransition() {
+    signal input oldStateRoot;
+    signal input newStateRoot;
+    signal input transactionHash;
+    
+    // Verify state transition
+    component hasher = Poseidon(3);
+    hasher.inputs[0] <== oldStateRoot;
+    hasher.inputs[1] <== transactionHash;
+    hasher.inputs[2] <== 0; // Nonce or other metadata
+    
+    // Ensure the new state root is correct
+    hasher.out === newStateRoot;
+}
+```
+
+## Security Features
+
+### 1. Fraud Proofs
+
+```solidity
+// Fraud proof submission
+function submitFraudProof(
+    uint256 blockNumber,
+    bytes calldata invalidProof,
+    bytes calldata validProof
+) external {
+    // Verify fraud proof
+    require(
+        isInvalidTransition(blockNumber, invalidProof, validProof),
+        "Not a fraud"
+    );
+    
+    // Slash malicious validator
+    slashValidator(blockNumber);
+}
+```
+
+### 2. Economic Security
+
+```solidity
+// Bonding mechanism
+function bond() external payable {
+    require(msg.value >= MIN_BOND, "Bond too small");
+    bonds[msg.sender] += msg.value;
+    emit BondPosted(msg.sender, msg.value);
+}
+
+function slash(address validator) internal {
+    uint256 bondAmount = bonds[validator];
+    bonds[validator] = 0;
+    
+    // Distribute slash to reporters
+    uint256 reward = bondAmount / 2;
+    msg.sender.transfer(reward);
+    
+    // Burn remaining bond
+    address(0).transfer(bondAmount - reward);
+}
+```
+
+## Performance Optimizations
+
+### 1. Batch Verification
+
+```rust
+// Batch verification of signatures
+fn verify_batch_signatures(
+    messages: &[Vec<u8>],
+    signatures: &[Signature],
+    public_keys: &[PublicKey],
+) -> Result<(), Error> {
+    let mut batch = Vec::new();
+    
+    for ((msg, sig), pk) in messages.iter().zip(signatures).zip(public_keys) {
+        batch.push((pk, sig, msg.as_slice()));
+    }
+    
+    // Use batch verification
+    verify_batch(&batch)?;
+    Ok(())
+}
+```
+
+## Resources
+- [zkBridge](https://github.com/zkbridge/zkbridge)
+- [Succinct Labs](https://succinct.xyz/)
+- [Polygon zkEVM Bridge](https://zkevm.polygon.technology/)

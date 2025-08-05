@@ -1,0 +1,125 @@
+---
+title: "StarkNet Security Model"
+description: "STARK-based ZK-Rollup security"
+date: "2025-05-01"
+categories: ["Blockchain", "ZK-Rollups", "Security"]
+author: "Sarwagya"
+---
+
+# StarkNet Security Implementation
+
+## Core Architecture
+
+### 1. Cairo VM
+
+```cairo
+// Simple Cairo contract example
+@storage_var
+func balance(user: felt) -> (res: felt) {
+}
+
+@external
+func transfer{
+    syscall_ptr: felt*,
+    pedersen_ptr: HashBuiltin*,
+    range_check_ptr
+}(amount: felt, recipient: felt) {
+    let (current_balance) = balance.read(recipient);
+    let new_balance = current_balance + amount;
+    balance.write(recipient, new_balance);
+    return ();
+}
+```
+
+### 2. STARK Proof Verification
+
+```solidity
+// StarkNet core contract
+contract StarkNet {
+    function updateState(
+        uint256[] calldata programOutput,
+        uint256 onchainDataHash,
+        uint256 onchainDataSize
+    ) external {
+        // Verify STARK proof
+        require(
+            verifyProof(
+                programOutput,
+                onchainDataHash,
+                onchainDataSize
+            ),
+            "Invalid proof"
+        );
+        
+        // Update state
+        stateRoot = programOutput[0];
+        blockNumber++;
+    }
+}
+```
+
+## Security Features
+
+### 1. Recursive Proofs
+
+```python
+# Recursive proof composition
+def create_recursive_proof(proofs):
+    # Aggregate multiple proofs
+    return aggregate_proofs(proofs)
+
+def verify_recursive(proof, public_inputs):
+    # Verify recursive proof
+    return verify_proof(proof, public_inputs)
+```
+
+### 2. Account Abstraction
+
+```cairo
+// Account contract
+@contract_interface
+namespace IAccount {
+    func validate_transaction(
+        to: felt,
+        selector: felt,
+        calldata_len: felt,
+        calldata: felt*,
+        nonce: felt
+    ) -> (response: felt) {
+    }
+}
+```
+
+## Attack Vectors
+
+1. **Frontrunning**
+   - Use commit-reveal schemes
+   - Private mempools
+   - MEV protection
+
+2. **Reentrancy**
+   - Use checks-effects-interactions
+   - Reentrancy guards
+   - Formal verification
+
+## Monitoring
+
+### 1. Node Health
+```yaml
+# Prometheus config
+scrape_configs:
+  - job_name: 'starknet_node'
+    static_configs:
+      - targets: ['localhost:9100']
+```
+
+### 2. Key Metrics
+- Block production time
+- Proof generation time
+- Transaction throughput
+- Failed transactions
+
+## Resources
+- [StarkNet Docs](https://starknet.io/docs/)
+- [Cairo Language](https://www.cairo-lang.org/)
+- [StarkEx](https://starkware.co/starkex/)

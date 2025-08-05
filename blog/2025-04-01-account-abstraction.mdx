@@ -1,0 +1,167 @@
+---
+title: "Account Abstraction"
+description: "EIP-4337 implementation guide"
+date: "2025-04-01"
+categories: ["Ethereum", "Smart Contracts", "Wallets"]
+author: "Sarwagya"
+---
+
+# Account Abstraction with EIP-4337
+
+## Core Components
+
+### 1. EntryPoint Contract
+
+```solidity
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.0;
+
+contract EntryPoint {
+    using UserOperationLib for UserOperation;
+    
+    struct UserOperation {
+        address sender;
+        uint256 nonce;
+        bytes initCode;
+        bytes callData;
+        uint256 callGasLimit;
+        uint256 verificationGasLimit;
+        uint256 preVerificationGas;
+        uint256 maxFeePerGas;
+        uint256 maxPriorityFeePerGas;
+        bytes paymasterAndData;
+        bytes signature;
+    }
+    
+    function handleOps(
+        UserOperation[] calldata ops,
+        address payable beneficiary
+    ) external {
+        for (uint256 i = 0; i < ops.length; i++) {
+            _validateAccount(ops[i]);
+            _executeUserOp(ops[i]);
+        }
+    }
+    
+    function _validateAccount(UserOperation calldata op) internal {
+        // Verify signature and nonce
+        // ...
+    }
+    
+    function _executeUserOp(UserOperation calldata op) internal {
+        // Execute the operation
+        // ...
+    }
+}
+```
+
+## Smart Contract Wallet
+
+### 1. Minimal Wallet Implementation
+
+```solidity
+// SPDX-License-Identifier: GPL-3.0
+pragma solidity ^0.8.0;
+
+contract SmartAccount {
+    address public owner;
+    mapping(bytes32 => bool) public executed;
+    
+    constructor(address _owner) {
+        owner = _owner;
+    }
+    
+    function validateUserOp(
+        UserOperation calldata op,
+        bytes32 requestId,
+        uint256 missingAccountFunds
+    ) external returns (uint256 validationData) {
+        require(!executed[requestId], "Already executed");
+        require(verifySignature(op), "Invalid signature");
+        
+        if (missingAccountFunds > 0) {
+            // Pay prefund
+            // ...
+        }
+        
+        executed[requestId] = true;
+        return 0;
+    }
+    
+    function execute(
+        address dest,
+        uint256 value,
+        bytes calldata func
+    ) external {
+        require(msg.sender == ENTRY_POINT, "Not from entry point");
+        (bool success, ) = dest.call{value: value}(func);
+        require(success, "Execution failed");
+    }
+}
+```
+
+## Paymaster Integration
+
+### 1. Gas Abstraction
+
+```solidity
+contract Paymaster {
+    function validatePaymasterUserOp(
+        UserOperation calldata op,
+        bytes32 requestId,
+        uint256 maxCost
+    ) external returns (bytes memory context) {
+        // Verify payment method
+        // ...
+        
+        // Return context for postOp
+        return abi.encode(op.sender, maxCost);
+    }
+    
+    function postOp(
+        bytes calldata context,
+        bool success,
+        uint256 actualGasCost
+    ) external {
+        // Handle payment after operation
+        // ...
+    }
+}
+```
+
+## Security Considerations
+
+### 1. Replay Protection
+- Per-wallet nonce
+- Domain separation
+- Chain ID validation
+
+### 2. Gas Management
+- Gas limits per operation
+- Refund policies
+- Emergency recovery
+
+## User Experience
+
+1. **Batch Transactions**
+   ```typescript
+   const userOp = {
+       sender: walletAddress,
+       nonce: await entryPoint.getNonce(walletAddress, 0),
+       callData: encodeMultiSend([
+           { to: token.address, value: 0, data: approveData },
+           { to: swapRouter.address, value: ethAmount, data: swapData }
+       ]),
+       // ... other UserOperation fields
+   };
+   ```
+
+2. **Gasless Transactions**
+   - Sponsored transactions
+   - dApp pays gas
+   - Token payments
+
+## Resources
+- [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337)
+- [Account Abstraction Docs](https://account-abstraction.io/)
+- [Stackup](https://www.stackup.sh/)

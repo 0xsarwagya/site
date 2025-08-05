@@ -1,0 +1,176 @@
+---
+title: "Aztec Connect Architecture"
+description: "Privacy-focused ZK Rollup"
+date: "2025-05-13"
+categories: ["Ethereum", "Privacy", "ZK-Rollups"]
+author: "Sarwagya"
+---
+
+# Aztec Connect Implementation
+
+## Core Components
+
+### 1. Private Note System
+
+```solidity
+// Private note structure
+struct Note {
+    address owner;
+    uint256 value;
+    bytes32 secret;
+    bytes32 nullifier;
+    bool spent;
+}
+
+// Note management
+contract PrivateNotes {
+    mapping(bytes32 => Note) private notes;
+    mapping(bytes32 => bool) private nullifiers;
+    
+    function createNote(
+        address _owner,
+        uint256 _value,
+        bytes32 _secret
+    ) external returns (bytes32) {
+        bytes32 noteHash = keccak256(abi.encode(_owner, _value, _secret));
+        notes[noteHash] = Note({
+            owner: _owner,
+            value: _value,
+            secret: _secret,
+            nullifier: 0,
+            spent: false
+        });
+        return noteHash;
+    }
+}
+```
+
+### 2. ZK Circuit
+
+```typescript
+// Noir circuit for private transfer
+circuit PrivateTransfer {
+    // Inputs
+    field amount;
+    field secret;
+    field nullifier;
+    field merkleRoot;
+    
+    // Public inputs
+    field commitment;
+    
+    // Verify note commitment
+    commitment === pedersen([amount, secret]);
+    
+    // Verify merkle inclusion
+    assert(verifyMerkle(commitment, merkleRoot));
+    
+    // Output new nullifier
+    output <== pedersen([nullifier]);
+}
+```
+
+## Privacy Features
+
+### 1. Account Abstraction
+
+```solidity
+// Private account interface
+interface IAztecAccount {
+    function validateProof(
+        bytes calldata proof,
+        bytes32[] calldata publicInputs
+    ) external returns (bool);
+    
+    function execute(
+        address to,
+        uint256 value,
+        bytes calldata data
+    ) external;
+}
+```
+
+### 2. Shielded Pool
+
+```solidity
+contract ShieldedPool {
+    using SafeMath for uint256;
+    
+    mapping(bytes32 => uint256) private commitments;
+    mapping(bytes32 => bool) private nullifiers;
+    
+    function deposit(bytes32 commitment) external payable {
+        commitments[commitment] = commitments[commitment].add(msg.value);
+        emit Deposit(commitment, msg.value);
+    }
+    
+    function withdraw(
+        uint256 amount,
+        bytes32 nullifier,
+        bytes calldata proof
+    ) external {
+        // Verify ZK proof
+        require(verifyWithdrawProof(amount, nullifier, proof), "Invalid proof");
+        
+        // Prevent double spending
+        require(!nullifiers[nullifier], "Already spent");
+        nullifiers[nullifier] = true;
+        
+        // Transfer funds
+        payable(msg.sender).transfer(amount);
+    }
+}
+```
+
+## Performance Optimizations
+
+### 1. Recursive Proofs
+
+```rust
+// Recursive proof aggregation
+fn aggregate_proofs(proofs: Vec<Proof>) -> Proof {
+    let mut current = proofs[0].clone();
+    
+    for proof in proofs.iter().skip(1) {
+        current = merge_proofs(&current, proof);
+    }
+    
+    current
+}
+```
+
+### 2. Batch Processing
+
+```solidity
+// Batch transaction processing
+function processBatch(
+    bytes[] calldata transactions,
+    bytes calldata proof
+) external {
+    // Verify batch proof
+    require(verifyBatchProof(transactions, proof), "Invalid batch proof");
+    
+    // Process each transaction
+    for (uint i = 0; i < transactions.length; i++) {
+        (bool success, ) = address(this).delegatecall(transactions[i]);
+        require(success, "Transaction failed");
+    }
+}
+```
+
+## Security Model
+
+1. **Privacy Guarantees**
+   - Zero-knowledge proofs
+   - Shielded balances
+   - Private state transitions
+
+2. **Economic Security**
+   - Bonding mechanism
+   - Slashing conditions
+   - Emergency exits
+
+## Resources
+- [Aztec Docs](https://docs.aztec.network/)
+- [Noir Language](https://noir-lang.org/)
+- [zk.money](https://zk.money/)

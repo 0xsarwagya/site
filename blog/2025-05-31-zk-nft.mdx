@@ -1,0 +1,210 @@
+---
+title: "ZK-NFT Implementation"
+description: "Private and verifiable NFTs"
+date: "2025-05-31"
+categories: ["Blockchain", "NFTs", "ZK-Proofs"]
+author: "Sarwagya"
+---
+
+# Zero-Knowledge NFTs
+
+## Core Contract
+
+### 1. ZK-NFT Base
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract ZKNFT {
+    struct Token {
+        bytes32 commitment;
+        address owner;
+        bool revealed;
+    }
+    
+    mapping(uint256 => Token) public tokens;
+    mapping(address => uint256[]) public ownedTokens;
+    
+    // Mint private NFT
+    function mint(bytes32 commitment) external returns (uint256) {
+        uint256 tokenId = totalSupply() + 1;
+        
+        tokens[tokenId] = Token({
+            commitment: commitment,
+            owner: msg.sender,
+            revealed: false
+        });
+        
+        ownedTokens[msg.sender].push(tokenId);
+        return tokenId;
+    }
+    
+    // Reveal NFT with ZK proof
+    function reveal(
+        uint256 tokenId,
+        string calldata metadata,
+        bytes calldata proof
+    ) external {
+        Token storage token = tokens[tokenId];
+        require(token.owner == msg.sender, "Not owner");
+        require(!token.revealed, "Already revealed");
+        
+        // Verify ZK proof
+        require(
+            verifyRevealProof(token.commitment, metadata, proof),
+            "Invalid proof"
+        );
+        
+        token.revealed = true;
+        emit MetadataRevealed(tokenId, metadata);
+    }
+}
+```
+
+## Privacy Features
+
+### 1. Selective Disclosure
+
+```typescript
+// Selective reveal of NFT attributes
+interface SelectiveReveal {
+    function revealAttribute(
+        uint256 tokenId,
+        string calldata attribute,
+        bytes calldata proof
+    ) external view returns (string memory);
+}
+
+// Example implementation
+contract PrivateAttributes is SelectiveReveal {
+    function revealAttribute(
+        uint256 tokenId,
+        string calldata attribute,
+        bytes calldata proof
+    ) external view returns (string memory) {
+        // Verify ZK proof
+        require(
+            verifyAttributeProof(tokenId, attribute, proof),
+            "Invalid proof"
+        );
+        
+        // Return decrypted attribute
+        return decryptAttribute(tokenId, attribute);
+    }
+}
+```
+
+## Circuit Design
+
+### 1. Ownership Proof
+
+```circom
+template NFTOwnership() {
+    signal input tokenId;
+    signal input owner;
+    signal input secret;
+    
+    // Verify ownership
+    component ownership = VerifyOwnership();
+    ownership.tokenId <== tokenId;
+    ownership.owner <== owner;
+    ownership.secret <== secret;
+    
+    // Public output (1 if valid, 0 otherwise)
+    signal output isValid <== ownership.out;
+}
+
+// Helper component
+template VerifyOwnership() {
+    signal input tokenId;
+    signal input owner;
+    signal input secret;
+    
+    // Commitment = hash(tokenId, owner, secret)
+    signal commitment <== Poseidon(3)([tokenId, owner, secret]);
+    
+    // Verify commitment exists in contract
+    signal output out <== CheckCommitment(commitment);
+}
+```
+
+## Marketplace Integration
+
+### 1. Private Sales
+
+```solidity
+contract ZKNFTMarketplace {
+    struct Listing {
+        address seller;
+        uint256 price;
+        bytes32 commitment;
+        bool active;
+    }
+    
+    mapping(uint256 => Listing) public listings;
+    
+    // List NFT for private sale
+    function listForSale(
+        uint256 tokenId,
+        uint256 price,
+        bytes32 commitment
+    ) external {
+        // Transfer NFT to escrow
+        IZKNFT(nftContract).transferFrom(msg.sender, address(this), tokenId);
+        
+        listings[tokenId] = Listing({
+            seller: msg.sender,
+            price: price,
+            commitment: commitment,
+            active: true
+        });
+    }
+    
+    // Purchase with ZK proof
+    function purchase(
+        uint256 tokenId,
+        bytes calldata proof
+    ) external payable {
+        Listing storage listing = listings[tokenId];
+        require(listing.active, "Not for sale");
+        require(msg.value >= listing.price, "Insufficient payment");
+        
+        // Verify proof of ownership
+        require(
+            verifyOwnershipProof(tokenId, listing.seller, proof),
+            "Invalid proof"
+        );
+        
+        // Transfer NFT to buyer
+        IZKNFT(nftContract).transferFrom(address(this), msg.sender, tokenId);
+        
+        // Transfer payment to seller
+        payable(listing.seller).transfer(listing.price);
+        
+        // Refund excess
+        if (msg.value > listing.price) {
+            payable(msg.sender).transfer(msg.value - listing.price);
+        }
+        
+        delete listings[tokenId];
+    }
+}
+```
+
+## Use Cases
+
+1. **Private Collectibles**
+   - Hidden metadata
+   - Selective attribute reveal
+   - Proof of ownership
+
+2. **Membership Tokens**
+   - Anonymous membership
+   - Verified credentials
+   - Access control
+
+## Resources
+- [Aztec zk.money](https://zk.money/)
+- [Dark Forest](https://zkga.me/)
+- [0xPARC](https://0xparc.org/)

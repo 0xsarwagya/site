@@ -1,0 +1,145 @@
+---
+title: "ZK-Rollup Architecture"
+description: "Scaling Ethereum with zero-knowledge proofs"
+date: "2025-04-19"
+categories: ["Ethereum", "Scaling", "ZK-Rollups"]
+author: "Sarwagya"
+---
+
+# ZK-Rollup Implementation Guide
+
+## Core Components
+
+### 1. Rollup Contract
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract ZKRollup {
+    struct Batch {
+        bytes32 stateRoot;
+        bytes32 exitRoot;
+        uint256 timestamp;
+        bool verified;
+    }
+    
+    Batch[] public batches;
+    mapping(bytes32 => bool) public spentNullifiers;
+    
+    // Submit a new batch with ZK proof
+    function submitBatch(
+        bytes32 _newStateRoot,
+        bytes32 _newExitRoot,
+        bytes calldata _proof
+    ) external {
+        // Verify ZK proof
+        require(verifyProof(_newStateRoot, _newExitRoot, _proof), "Invalid proof");
+        
+        // Update state
+        batches.push(Batch({
+            stateRoot: _newStateRoot,
+            exitRoot: _newExitRoot,
+            timestamp: block.timestamp,
+            verified: true
+        }));
+    }
+    
+    // Withdraw funds with Merkle proof
+    function withdraw(
+        uint256 _amount,
+        address _recipient,
+        bytes32[] calldata _proof
+    ) external {
+        bytes32 leaf = keccak256(abi.encodePacked(_amount, _recipient));
+        require(verifyMerkleProof(leaf, _proof), "Invalid proof");
+        
+        // Prevent double spending
+        require(!spentNullifiers[leaf], "Already spent");
+        spentNullifiers[leaf] = true;
+        
+        // Transfer funds
+        (bool success, ) = _recipient.call{value: _amount}("");
+        require(success, "Transfer failed");
+    }
+}
+```
+
+## Circuit Design
+
+### 1. Transaction Verification
+
+```circom
+template Main() {
+    // Public inputs
+    signal input oldStateRoot;
+    signal input newStateRoot;
+    signal input exitRoot;
+    
+    // Private inputs
+    signal private transactionsHash;
+    
+    // Verify state transition
+    component hasher = Poseidon(2);
+    hasher.inputs[0] <== oldStateRoot;
+    hasher.inputs[1] <== transactionsHash;
+    
+    // Ensure the new state root is correct
+    hasher.out === newStateRoot;
+    
+    // Additional constraints...
+}
+```
+
+## Performance Optimizations
+
+### 1. Recursive Proofs
+
+```rust
+// Generate recursive proof
+let recursive_proof = generate_recursive_proof(
+    &vk,
+    &proof1,
+    &public_inputs1,
+    &proof2,
+    &public_inputs2,
+);
+
+// Verify recursive proof
+assert!(verify_recursive_proof(&vk, &recursive_proof));
+```
+
+### 2. Data Availability
+
+- Store transaction data on-chain
+- Use data availability committees
+- Implement data sharding
+
+## Security Considerations
+
+### 1. Trusted Setup
+- Secure ceremony
+- Multi-party computation
+- Toxic waste destruction
+
+### 2. Upgradability
+- Time-locked upgrades
+- Multi-sig governance
+- Emergency stops
+
+## Monitoring
+
+1. **Block Explorer**
+   - Track rollup blocks
+   - Monitor proof generation time
+   - Track transaction finality
+
+2. **Node Health**
+   - Prover performance
+   - Memory usage
+   - CPU utilization
+
+## Resources
+- [zkSync Documentation](https://zksync.io/)
+- [StarkWare](https://starkware.co/)
+- [Scroll Tech](https://scroll.io/)

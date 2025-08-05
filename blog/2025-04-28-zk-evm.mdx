@@ -1,0 +1,124 @@
+---
+title: "ZK-EVM Architecture"
+description: "Ethereum-equivalent ZK Rollups"
+date: "2025-04-28"
+categories: ["Ethereum", "ZK-Rollups", "Scaling"]
+author: "Sarwagya"
+---
+
+# ZK-EVM Implementation Guide
+
+## Core Components
+
+### 1. State Transition Function
+
+```solidity
+// Simplified ZK-EVM state transition
+contract ZKEVM {
+    struct Block {
+        bytes32 parentHash;
+        bytes32 stateRoot;
+        bytes32 transactionsRoot;
+        bytes32 receiptsRoot;
+        uint256 timestamp;
+        bytes32[] transactions;
+    }
+    
+    mapping(uint256 => Block) public blocks;
+    
+    function executeBlock(
+        bytes calldata blockData,
+        bytes calldata proof
+    ) external {
+        // Verify ZK proof
+        require(verifyProof(blockData, proof), "Invalid proof");
+        
+        // Update state
+        Block memory newBlock = abi.decode(blockData, (Block));
+        blocks[block.number] = newBlock;
+    }
+}
+```
+
+### 2. Bytecode Verification
+
+```solidity
+// EVM bytecode verifier
+contract BytecodeVerifier {
+    function verifyBytecode(
+        bytes32 codeHash,
+        bytes32[] calldata bytecodeHashes,
+        uint256[] calldata indices,
+        bytes32[] calldata proof
+    ) public pure returns (bool) {
+        // Verify Merkle proof
+        bytes32 computedHash = codeHash;
+        
+        for (uint256 i = 0; i < indices.length; i++) {
+            if (indices[i] == 0) {
+                computedHash = keccak256(abi.encodePacked(proof[i], computedHash));
+            } else {
+                computedHash = keccak256(abi.encodePacked(computedHash, proof[i]));
+            }
+        }
+        
+        // Compare with root
+        return computedHash == getRoot(bytecodeHashes);
+    }
+}
+```
+
+## Performance Optimizations
+
+### 1. Parallel Processing
+
+```rust
+// Parallel transaction execution
+async fn execute_block(block: Block) -> Result<(), Error> {
+    let mut tasks = vec![];
+    
+    for tx in block.transactions {
+        let tx_clone = tx.clone();
+        tasks.push(tokio::spawn(async move {
+            // Execute transaction
+            execute_transaction(tx_clone).await
+        }));
+    }
+    
+    // Wait for all transactions
+    for task in tasks {
+        task.await??;
+    }
+    
+    Ok(())
+}
+```
+
+## Security Considerations
+
+### 1. Soundness
+- Zero-knowledge proofs
+- Trusted setup ceremony
+- Circuit constraints
+
+### 2. Liveness
+- Prover incentives
+- Fallback mechanisms
+- Emergency exits
+
+## Integration
+
+1. **Ethereum Client**
+   - Geth integration
+   - Execution client API
+   - JSON-RPC compatibility
+
+2. **Developer Tools**
+   - Hardhat plugin
+   - Foundry support
+   - Debugging tools
+
+## Resources
+- [Scroll ZK-EVM](https://scroll.io/)
+- [Polygon zkEVM](https://polygon.technology/polygon-zkevm)
+- [zkSync Era](https://era.zksync.io/)

@@ -1,0 +1,108 @@
+---
+title: "Formal Verification in Blockchain"
+description: "Mathematically proving smart contract correctness"
+date: "2025-03-11"
+categories: ["Blockchain", "Security", "Formal Methods"]
+author: "Sarwagya"
+---
+
+# Formal Verification for Smart Contracts
+
+## What is Formal Verification?
+
+Formal verification uses mathematical methods to prove or disprove the correctness of a system's design with respect to certain properties. In blockchain, this means:
+
+1. **Mathematical Proofs**: Rigorous verification of contract behavior
+2. **Property Checking**: Ensuring specific conditions always hold
+3. **Exhaustive Analysis**: Covering all possible execution paths
+
+## Implementation with Certora
+
+### 1. Defining Properties
+
+```certora
+// Property: Transfer maintains total supply
+rule transferPreservesTotalSupply {
+    env e;
+    address from;
+    address to;
+    uint256 amount;
+    
+    // Pre-conditions
+    require from != address(0);
+    require to != address(0);
+    require amount > 0;
+    
+    // Capture state before
+    uint256 supplyBefore = totalSupply();
+    
+    // Execute transfer
+    transfer(e, from, to, amount);
+    
+    // Verify property
+    assert totalSupply() == supplyBefore, "Total supply changed";
+}
+```
+
+### 2. Invariant Checking
+
+```certora
+// Invariant: No account can have negative balance
+invariant nonNegativeBalance(address account) {
+    balanceOf(account) >= 0
+}
+```
+
+## Tools Comparison
+
+| Tool          | Language   | Integration | Key Features                  |
+|---------------|------------|-------------|-------------------------------|
+| Certora       | CVL        | Solidity    | Automated theorem proving     |
+| K-Framework   | K          | Multiple    | Language semantics definition |
+| SMTChecker    | Solidity   | Native      | Built into Solidity compiler  |
+| Dafny         | Dafny      | EVM         | Verification-aware language   |
+
+## Best Practices
+
+1. **Start Early**
+   - Integrate formal verification from day one
+   - Write specifications alongside code
+
+2. **Property Selection**
+   - Focus on critical invariants
+   - Test common attack vectors
+   - Verify access control
+
+3. **Incremental Verification**
+   - Start with simple properties
+   - Gradually increase complexity
+   - Build a property library
+
+## Common Pitfalls
+
+1. **Incomplete Specifications**
+   - Missing edge cases
+   - Overlooking preconditions
+   - Underspecified behavior
+
+2. **Performance Issues**
+   - State explosion
+   - Timeout in complex proofs
+   - Resource constraints
+
+## Integration in CI/CD
+
+1. **Automated Checks**
+   - Run verification on every commit
+   - Fail builds on violations
+   - Generate verification reports
+
+2. **Documentation**
+   - Document all properties
+   - Track verification coverage
+   - Maintain proof artifacts
+
+## Resources
+- [Certora Documentation](https://docs.certora.com/)
+- [Formal Verification Wiki](https://en.wikipedia.org/wiki/Formal_verification)
+- [DappHub Guide](https://dapphub.ch/)

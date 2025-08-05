@@ -1,0 +1,155 @@
+---
+title: "Smart Contract Upgrade Patterns"
+description: "Secure upgrade patterns for Ethereum smart contracts"
+date: "2025-04-04"
+categories: ["Ethereum", "Smart Contracts", "Upgrades"]
+author: "Sarwagya"
+---
+
+# Smart Contract Upgrade Patterns
+
+## Proxy Patterns
+
+### 1. Transparent Proxy
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract TransparentProxy {
+    address public implementation;
+    address public admin;
+    
+    constructor(address _implementation) {
+        implementation = _implementation;
+        admin = msg.sender;
+    }
+    
+    fallback() external payable {
+        address _impl = implementation;
+        assembly {
+            let ptr := mload(0x40)
+            calldatacopy(ptr, 0, calldatasize())
+            let result := delegatecall(gas(), _impl, ptr, calldatasize(), 0, 0)
+            let size := returndatasize()
+            returndatacopy(ptr, 0, size)
+            
+            switch result
+            case 0 { revert(ptr, size) }
+            default { return(ptr, size) }
+        }
+    }
+    
+    function upgradeTo(address newImplementation) external {
+        require(msg.sender == admin, "Unauthorized");
+        implementation = newImplementation;
+    }
+}
+```
+
+### 2. UUPS (Universal Upgradeable Proxy Standard)
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+abstract contract UUPSUpgradeable {
+    address private _implementation;
+    
+    function _authorizeUpgrade(address) internal virtual;
+    
+    function upgradeTo(address newImplementation) external virtual {
+        _authorizeUpgrade(newImplementation);
+        _upgradeToAndCall(newImplementation, "", false);
+    }
+    
+    function _upgradeToAndCall(
+        address newImplementation,
+        bytes memory data,
+        bool forceCall
+    ) internal {
+        _implementation = newImplementation;
+        if (data.length > 0 || forceCall) {
+            (bool success, ) = newImplementation.delegatecall(data);
+            require(success, "Call failed");
+        }
+    }
+}
+```
+
+## Storage Layout Management
+
+### 1. Storage Gaps
+
+```solidity
+contract Base {
+    uint256 public value;
+    uint256[49] private __gap; // Reserve 50 storage slots
+}
+
+contract Child is Base {
+    // New variables should use next available slot (index 1)
+    address public owner;
+    uint256[49] private __gap;
+}
+```
+
+### 2. Storage Collision Prevention
+
+```solidity
+// Bad: Potential storage collision
+contract BadUpgrade {
+    uint256 public value;
+    // Adding new variable after deployment
+    address public owner; // Could overwrite existing data
+}
+
+// Good: Use storage gaps
+contract GoodUpgrade {
+    uint256 public value;
+    uint256[49] private __gap;
+    
+    // Safe to add after deployment
+    address public owner;
+    uint256[48] private __gap;
+}
+```
+
+## Upgrade Best Practices
+
+1. **Testing**
+   - Test upgrades on testnet first
+   - Verify storage layout
+   - Test edge cases
+
+2. **Security**
+   - Use timelocks for upgrades
+   - Multi-sig for admin functions
+   - Emergency pause functionality
+
+3. **Monitoring**
+   - Events for upgrades
+   - Monitor proxy admin
+   - Track implementation changes
+
+## Common Pitfalls
+
+1. **Storage Collisions**
+   - Always use storage gaps
+   - Document storage layout
+   - Use tools to verify
+
+2. **Function Clashes**
+   - Avoid function selector collisions
+   - Use unique function names
+   - Test function selectors
+
+3. **Initialization**
+   - Use initializer pattern
+   - Prevent reinitialization
+   - Test initialization
+
+## Resources
+- [OpenZeppelin Upgrades](https://docs.openzeppelin.com/upgrades)
+- [UUPS EIP-1822](https://eips.ethereum.org/EIPS/eip-1822)
+- [Transparent Proxies](https://blog.openzeppelin.com/the-transparent-proxy-pattern/)

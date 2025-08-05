@@ -1,0 +1,146 @@
+---
+title: "Optimistic ZK-EVM"
+description: "Combining optimistic and ZK rollups"
+date: "2025-05-16"
+categories: ["Ethereum", "ZK-Rollups", "Optimistic-Rollups"]
+author: "Sarwagya"
+---
+
+# Optimistic ZK-EVM Architecture
+
+## Hybrid Approach
+
+### 1. Core Contract
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract OptimisticZKEVM {
+    struct StateUpdate {
+        bytes32 stateRoot;
+        bytes32 transactionHash;
+        uint256 timestamp;
+        bool finalized;
+        bool challenged;
+    }
+    
+    mapping(uint256 => StateUpdate) public stateUpdates;
+    uint256 public challengePeriod = 7 days;
+    
+    // Submit new state update with ZK proof
+    function submitStateUpdate(
+        bytes32 _newStateRoot,
+        bytes32 _transactionHash,
+        bytes calldata _proof
+    ) external {
+        // Verify ZK proof
+        require(verifyProof(_newStateRoot, _transactionHash, _proof), "Invalid proof");
+        
+        // Record state update
+        stateUpdates[block.number] = StateUpdate({
+            stateRoot: _newStateRoot,
+            transactionHash: _transactionHash,
+            timestamp: block.timestamp,
+            finalized: false,
+            challenged: false
+        });
+    }
+    
+    // Challenge a state update
+    function challengeUpdate(
+        uint256 _blockNumber,
+        bytes calldata _fraudProof
+    ) external {
+        StateUpdate storage update = stateUpdates[_blockNumber];
+        require(!update.finalized, "Already finalized");
+        require(block.timestamp < update.timestamp + challengePeriod, "Challenge period expired");
+        
+        if (isValidFraudProof(_fraudProof)) {
+            // Revert state
+            delete stateUpdates[_blockNumber];
+        } else {
+            update.challenged = true;
+        }
+    }
+    
+    // Finalize state update after challenge period
+    function finalizeUpdate(uint256 _blockNumber) external {
+        StateUpdate storage update = stateUpdates[_blockNumber];
+        require(!update.finalized, "Already finalized");
+        require(block.timestamp >= update.timestamp + challengePeriod, "Challenge period not over");
+        require(!update.challenged, "Update was challenged");
+        
+        update.finalized = true;
+    }
+}
+```
+
+## Performance Optimizations
+
+### 1. Parallel Proof Generation
+
+```rust
+// Parallel proof generation
+async fn generate_proofs(transactions: Vec<Transaction>) -> Vec<Proof> {
+    let chunks: Vec<_> = transactions.chunks(100).collect();
+    let mut handles = vec![];
+    
+    for chunk in chunks {
+        let chunk = chunk.to_vec();
+        handles.push(tokio::spawn(async move {
+            let proof = generate_proof(chunk).await?;
+            Ok::<_, anyhow::Error>(proof)
+        }));
+    }
+    
+    let mut proofs = vec![];
+    for handle in handles {
+        proofs.push(handle.await??);
+    }
+    
+    proofs
+}
+```
+
+### 2. State Diff Compression
+
+```solidity
+// State diff compression
+function compressStateDiff(
+    bytes32[] calldata keys,
+    bytes[] calldata values
+) external pure returns (bytes memory) {
+    // Simple RLP encoding for demonstration
+    return abi.encode(keys, values);
+}
+```
+
+## Security Model
+
+### 1. Data Availability
+- On-chain data storage
+- Data availability proofs
+- Light client verification
+
+### 2. Economic Security
+- Bond requirements
+- Slashing conditions
+- Dispute resolution
+
+## Integration
+
+1. **Ethereum Client**
+   - Geth integration
+   - Execution API
+   - Engine API
+
+2. **Developer Tools**
+   - Hardhat plugin
+   - Foundry support
+   - Debugging tools
+
+## Resources
+- [Optimism ZK-EVM](https://community.optimism.io/)
+- [Scroll Documentation](https://scroll.io/)
+- [zkSync Era](https://era.zksync.io/)

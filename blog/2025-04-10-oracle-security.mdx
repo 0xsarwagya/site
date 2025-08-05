@@ -1,0 +1,140 @@
+---
+title: "Oracle Security Patterns"
+description: "Securing blockchain oracles"
+date: "2025-04-10"
+categories: ["Blockchain", "Oracles", "Security"]
+author: "Sarwagya"
+---
+
+# Oracle Security Best Practices
+
+## Oracle Patterns
+
+### 1. Decentralized Price Feeds
+
+```solidity
+// Chainlink AggregatorV3Interface
+interface AggregatorV3Interface {
+    function latestRoundData()
+        external
+        view
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        );
+}
+
+contract PriceConsumer {
+    AggregatorV3Interface internal priceFeed;
+    
+    constructor(address _priceFeed) {
+        priceFeed = AggregatorV3Interface(_priceFeed);
+    }
+    
+    function getLatestPrice() public view returns (int) {
+        (
+            ,
+            int price,
+            ,
+            uint256 updatedAt,
+            
+        ) = priceFeed.latestRoundData();
+        
+        // Check if price is fresh
+        require(block.timestamp - updatedAt < 1 hours, "Stale price");
+        
+        return price;
+    }
+}
+```
+
+### 2. TWAP (Time-Weighted Average Price)
+
+```solidity
+contract TWAPOracle {
+    struct Observation {
+        uint256 timestamp;
+        uint256 priceCumulative;
+        bool initialized;
+    }
+    
+    mapping(address => Observation) public observations;
+    
+    function update(address pair) external {
+        (uint256 price0Cumulative, uint256 price1Cumulative,) = 
+            IUniswapV2Pair(pair).currentCumulativePrices();
+            
+        observations[token0] = Observation({
+            timestamp: block.timestamp,
+            priceCumulative: price0Cumulative,
+            initialized: true
+        });
+        
+        observations[token1] = Observation({
+            timestamp: block.timestamp,
+            priceCumulative: price1Cumulative,
+            initialized: true
+        });
+    }
+    
+    function consult(address token, uint256 amountIn) 
+        external view returns (uint256 amountOut) 
+    {
+        Observation memory observation = observations[token];
+        require(observation.initialized, "No observation");
+        
+        uint256 timeElapsed = block.timestamp - observation.timestamp;
+        uint256 priceAverage = observation.priceCumulative / timeElapsed;
+        
+        return (amountIn * priceAverage) / (10 ** 18);
+    }
+}
+```
+
+## Security Considerations
+
+### 1. Data Freshness
+- Check timestamps
+- Set maximum age for data
+- Use heartbeat mechanisms
+
+### 2. Source Reliability
+- Multiple data sources
+- Reputation systems
+- Penalize incorrect data
+
+## Common Vulnerabilities
+
+1. **Price Manipulation**
+   ```solidity
+   // Vulnerable to flash loan attacks
+   function getPrice() external view returns (uint256) {
+       (uint256 reserve0, uint256 reserve1,) = pair.getReserves();
+       return (reserve0 * 1e18) / reserve1; // Simple price calculation
+   }
+   ```
+
+2. **Frontrunning**
+   - Use commit-reveal schemes
+   - Batch updates
+   - Minimum update intervals
+
+## Best Practices
+
+1. **For Developers**
+   - Use multiple oracles
+   - Implement circuit breakers
+   - Regular security audits
+
+2. **For Users**
+   - Verify oracle addresses
+   - Check update frequency
+   - Monitor for anomalies
+
+## Resources
+- [Chainlink Documentation](https://docs.chain.link/)
+- [Uniswap TWAP](https://docs.uniswap.org/sdk/guides/fetching-prices)
+- [Oracle Security Checklist](https://consensys.github.io/smart-contract-best-practices/oracles/)

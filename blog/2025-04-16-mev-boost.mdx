@@ -1,0 +1,158 @@
+---
+title: "MEV-Boost Architecture"
+description: "Maximizing validator rewards with MEV"
+date: "2025-04-16"
+categories: ["Ethereum", "MEV", "Validators"]
+author: "Sarwagya"
+---
+
+# MEV-Boost Implementation Guide
+
+## Core Components
+
+### 1. Builder API
+
+```go
+// Builder API endpoint
+type BuilderService struct {
+    db *Database
+    sk *bls.SecretKey
+}
+
+func (s *BuilderService) SubmitBlock(block *types.BuilderBlock) error {
+    // Verify block signature
+    if !block.Signature.Verify(sk.GetPublicKey(), block.Hash()) {
+        return errors.New("invalid signature")
+    }
+    
+    // Store block
+    return s.db.SaveBlock(block)
+}
+
+func (s *BuilderService) GetHeader(slot uint64) (*types.BuilderBid, error) {
+    // Get best block for slot
+    block, err := s.db.GetBestBlock(slot)
+    if err != nil {
+        return nil, err
+    }
+    
+    // Create bid
+    return &types.BuilderBid{
+        Header: block.Header(),
+        Value:  block.Value(),
+        Pubkey: s.sk.GetPublicKey(),
+    }, nil
+}
+```
+
+### 2. Relay Service
+
+```go
+// Relay service implementation
+type RelayService struct {
+    builders map[string]*BuilderClient
+    db       *Database
+}
+
+func (s *RelayService) GetHeader(slot uint64) (*types.BuilderBid, error) {
+    var bestBid *types.BuilderBid
+    
+    // Get best bid from all builders
+    for _, builder := range s.builders {
+        bid, err := builder.GetHeader(slot)
+        if err != nil {
+            continue
+        }
+        
+        if bestBid == nil || bid.Value.Cmp(bestBid.Value) > 0 {
+            bestBid = bid
+        }
+    }
+    
+    return bestBid, nil
+}
+
+func (s *RelayService) SubmitBlock(block *types.SignedBeaconBlock) error {
+    // Verify block
+    if err := s.verifyBlock(block); err != nil {
+        return err
+    }
+    
+    // Forward to builder
+    builder := s.builders[block.BuilderPubkey]
+    if builder == nil {
+        return errors.New("unknown builder")
+    }
+    
+    return builder.SubmitBlock(block)
+}
+```
+
+## Validator Integration
+
+### 1. Block Proposal
+
+```python
+def propose_block(slot: int) -> None:
+    # Get best header from relay
+    header = relay.get_header(slot)
+    
+    # Create block with header
+    block = create_block(header)
+    
+    # Sign and broadcast
+    signed_block = sign_block(block)
+    beacon_node.publish_block(signed_block)
+```
+
+### 2. Block Validation
+
+```python
+def validate_block(block: Block) -> bool:
+    # Verify block signature
+    if not verify_signature(block):
+        return False
+    
+    # Verify execution payload
+    if not verify_execution_payload(block):
+        return False
+    
+    # Verify MEV-boost fields
+    if not verify_mev_boost(block):
+        return False
+        
+    return True
+```
+
+## Security Considerations
+
+### 1. Censorship Resistance
+- Multiple relay support
+- Local block building fallback
+- Monitoring for censorship
+
+### 2. MEV Extraction
+- Fair ordering
+- Frontrunning protection
+- Transaction privacy
+
+## Monitoring
+
+1. **Prometheus Metrics**
+   ```yaml
+   # mev_boost_metrics.yaml
+   - name: mev_boost
+     metrics_path: /metrics
+     static_configs:
+       - targets: ['localhost:5062']
+   ```
+
+2. **Key Metrics**
+   - `mev_boost_bids_received_total`
+   - `mev_boost_blocks_proposed`
+   - `mev_boost_profit_eth`
+
+## Resources
+- [MEV-Boost Spec](https://github.com/flashbots/mev-boost)
+- [Ethereum MEV](https://ethereum.org/en/developers/docs/mev/)
+- [Flashbots Docs](https://docs.flashbots.net/)

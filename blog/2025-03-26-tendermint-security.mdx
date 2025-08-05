@@ -1,0 +1,148 @@
+---
+title: "Tendermint Consensus Security"
+description: "Byzantine fault tolerance in Tendermint"
+date: "2025-03-26"
+categories: ["Blockchain", "Consensus", "Security"]
+author: "Sarwagya"
+---
+
+# Tendermint Security Model
+
+## Consensus Properties
+
+Tendermint provides Byzantine fault tolerance with:
+
+1. **Safety**: No two correct nodes decide different values
+2. **Liveness**: The system makes progress (with 2/3+ honest validators)
+3. **Accountability**: Misbehaving validators can be detected and slashed
+
+## Validator Security
+
+### 1. Key Management
+
+```go
+// Generate new validator key pair
+type PrivValidator interface {
+    GetPubKey() (crypto.PubKey, error)
+    SignVote(chainID string, vote *tmproto.Vote) error
+    SignProposal(chainID string, proposal *tmproto.Proposal) error
+}
+
+// Example with file-based key storage
+pv := privval.LoadOrGenFilePV("config/priv_validator_key.json", "config/priv_validator_state.json")
+```
+
+### 2. Double-Signing Protection
+
+```go
+// Check for double signing
+func (v *Validator) CheckDoubleSign(height int64, round int32, signBytes []byte) error {
+    if existing, ok := v.lastSigned[height]; ok {
+        if existing.Round == round {
+            return fmt.Errorf("duplicate vote for height/round")
+        }
+        if !bytes.Equal(existing.Signature, signBytes) {
+            return fmt.Errorf("double sign detected")
+        }
+    }
+    return nil
+}
+```
+
+## P2P Security
+
+### 1. Authenticated Encryption
+
+```go
+// Node key configuration
+nodeKey, err := p2p.LoadOrGenNodeKey("config/node_key.json")
+if err != nil {
+    return err
+}
+
+// Create transport with encryption
+transport := p2p.NewMultiplexTransport(
+    conn.DefaultMConnConfig(),
+    p2p.NodeKeyToSecret(nodeKey),
+    p2p.DefaultMConnConfig(),
+)
+```
+
+### 2. Peer Authentication
+
+```go
+// Configure peer authentication
+authKey, _ := p2p.LoadOrGenNodeKey("config/auth_key.json")
+p2pAuth := p2p.NewAuthSigner(authKey, "chain-id")
+
+// Create authenticated peer
+authConn, err := p2p.MakeSecretConnection(conn, p2pAuth)
+if err != nil {
+    return fmt.Errorf("peer authentication failed: %w", err)
+}
+```
+
+## Light Client Security
+
+### 1. Header Verification
+
+```go
+// Verify signed header
+func VerifySignedHeader(
+    vals *types.ValidatorSet,
+    signedHeader *types.SignedHeader,
+) error {
+    // Check validator set hash
+    if !bytes.Equal(
+        signedHeader.ValidatorsHash,
+        vals.Hash(),
+    ) {
+        return errors.New("invalid validator set hash")
+    }
+    
+    // Verify commit signatures
+    return vals.VerifyCommit(
+        signedHeader.ChainID,
+        signedHeader.Commit.BlockID,
+        signedHeader.Height,
+        signedHeader.Commit,
+    )
+}
+```
+
+## Common Attacks & Mitigations
+
+1. **Long-Range Attacks**
+   - Use light client verification
+   - Implement checkpointing
+   
+2. **Grinding Attacks**
+   - Use VRF for proposer selection
+   - Add entropy to block proposal
+   
+3. **Network Splits**
+   - Configure persistent peers
+   - Use seed nodes for discovery
+
+## Monitoring
+
+### 1. Prometheus Metrics
+
+```yaml
+# config.toml
+[instrumentation]
+prometheus = true
+prometheus_listen_addr = ":26660"
+```
+
+### 2. Key Metrics to Monitor
+
+- `consensus_height`
+- `p2p_peers`
+- `mempool_size`
+- `consensus_rounds`
+
+## Resources
+- [Tendermint Security](https://docs.tendermint.com/v0.34/tendermint-core/validators.html#security)
+- [Cosmos Validator Security](https://hub.cosmos.network/main/validators/security.html)
+- [Tendermint Spec](https://github.com/tendermint/spec)

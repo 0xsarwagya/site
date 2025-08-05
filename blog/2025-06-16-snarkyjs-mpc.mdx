@@ -1,0 +1,217 @@
+---
+title: "SnarkyJS MPC"
+description: "Multi-party computation with SnarkyJS"
+date: "2025-06-16"
+categories: ["Blockchain", "MPC", "ZK-Proofs"]
+author: "Sarwagya"
+---
+
+# SnarkyJS MPC Implementation
+
+## Setup Phase
+
+### 1. Key Generation
+
+```typescript
+import { Field, Poseidon, PrivateKey, PublicKey, Signature } from 'snarkyjs';
+
+class MPCParticipant {
+  privateKey: PrivateKey;
+  publicKey: PublicKey;
+  threshold: number;
+  
+  constructor(threshold: number) {
+    this.privateKey = PrivateKey.random();
+    this.publicKey = this.privateKey.toPublicKey();
+    this.threshold = threshold;
+  }
+  
+  // Generate polynomial for secret sharing
+  generatePolynomial(secret: Field): Field[] {
+    const poly = [secret];
+    for (let i = 1; i < this.threshold; i++) {
+      poly.push(Field.random());
+    }
+    return poly;
+  }
+  
+  // Evaluate polynomial at point x
+  evaluatePolynomial(poly: Field[], x: Field): Field {
+    let result = Field(0);
+    for (let i = 0; i < poly.length; i++) {
+      result = result.add(poly[i].mul(x.pow(i)));
+    }
+    return result;
+  }
+  
+  // Generate shares for other participants
+  generateShares(secret: Field, participants: number): Field[] {
+    const poly = this.generatePolynomial(secret);
+    const shares: Field[] = [];
+    
+    for (let i = 1; i <= participants; i++) {
+      const x = Field(i);
+      const y = this.evaluatePolynomial(poly, x);
+      shares.push(y);
+    }
+    
+    return shares;
+  }
+}
+```
+
+## Signature Generation
+
+### 1. Distributed Signing
+
+```typescript
+class MPCSignature {
+  static async generatePartialSignature(
+    message: Field[],
+    privateKey: PrivateKey,
+    nonce: Field
+  ): Promise<Signature> {
+    // Hash the message with nonce
+    const hash = Poseidon.hash([...message, nonce]);
+    
+    // Generate signature
+    const signature = Signature.create(privateKey, [hash]);
+    
+    return signature;
+  }
+  
+  static combineSignatures(
+    signatures: Signature[],
+    nonce: Field
+  ): Signature {
+    // In a real implementation, you would use Lagrange interpolation
+    // to combine the signature shares
+    // This is a simplified version
+    
+    // For demonstration, we'll just return the first signature
+    // In production, use proper threshold signature scheme
+    return signatures[0];
+  }
+}
+```
+
+## Circuit Design
+
+### 1. MPC Circuit
+
+```typescript
+import { Circuit, Field, isReady, Poseidon } from 'snarkyjs';
+
+class MPCCircuit extends Circuit {
+  @method async verifySignature(
+    message: Field[],
+    signature: Signature,
+    publicKey: PublicKey
+  ) {
+    // Verify the signature
+    const isValid = signature.verify(publicKey, message);
+    isValid.assertTrue('Invalid signature');
+  }
+  
+  @method async verifyPartialSignature(
+    message: Field[],
+    partialSig: Signature,
+    publicKey: PublicKey,
+    nonce: Field
+  ) {
+    // Hash message with nonce
+    const hash = Poseidon.hash([...message, nonce]);
+    
+    // Verify partial signature
+    const isValid = partialSig.verify(publicKey, [hash]);
+    isValid.assertTrue('Invalid partial signature');
+  }
+}
+```
+
+## Integration
+
+### 1. Coordinator
+
+```typescript
+class MPCCoordinator {
+  participants: PublicKey[];
+  threshold: number;
+  
+  constructor(participants: PublicKey[], threshold: number) {
+    this.participants = participants;
+    this.threshold = threshold;
+  }
+  
+  async generateKeyPair(): Promise<{
+    publicKey: PublicKey;
+    shares: Map<PublicKey, Field>;
+  }> {
+    // Generate random secret
+    const secret = Field.random();
+    
+    // Generate shares
+    const participant = new MPCParticipant(this.threshold);
+    const shares = participant.generateShares(secret, this.participants.length);
+    
+    // Map shares to participants
+    const shareMap = new Map<PublicKey, Field>();
+    for (let i = 0; i < this.participants.length; i++) {
+      shareMap.set(this.participants[i], shares[i]);
+    }
+    
+    return {
+      publicKey: participant.publicKey,
+      shares: shareMap
+    };
+  }
+  
+  async signMessage(
+    message: Field[],
+    participants: {
+      publicKey: PublicKey;
+      privateKey: PrivateKey;
+    }[],
+    nonce: Field = Field.random()
+  ): Promise<Signature> {
+    // Collect partial signatures
+    const partialSigs = await Promise.all(
+      participants.map(async (p) => {
+        return {
+          publicKey: p.publicKey,
+          signature: await MPCSignature.generatePartialSignature(
+            message,
+            p.privateKey,
+            nonce
+          )
+        };
+      })
+    );
+    
+    // Combine signatures
+    const combinedSig = MPCSignature.combineSignatures(
+      partialSigs.map(p => p.signature),
+      nonce
+    );
+    
+    return combinedSig;
+  }
+}
+```
+
+## Security Considerations
+
+### 1. Nonce Management
+- Use random nonces for each signing session
+- Never reuse nonces
+- Consider using BIP-32 key derivation
+
+### 2. Participant Management
+- Verify participant identities
+- Implement proper authentication
+- Monitor for malicious behavior
+
+## Resources
+- [SnarkyJS Documentation](https://docs.minaprotocol.com/zkapps/snarkyjs-reference)
+- [GG20 Paper](https://eprint.iacr.org/2020/540)
+- [tss-lib](https://github.com/binance-chain/tss-lib)

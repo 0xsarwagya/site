@@ -1,0 +1,131 @@
+---
+title: "Polkadot Security Model"
+description: "Understanding Polkadot's shared security"
+date: "2025-03-20"
+categories: ["Blockchain", "Polkadot", "Security"]
+auer: "Sarwagya"
+---
+
+# Polkadot's Security Architecture
+
+## Shared Security Model
+
+### 1. Nominated Proof-of-Stake (NPoS)
+
+```rust
+// Simplified validator selection
+fn select_validators(
+    validators: Vec<Validator>,
+    max_validators: u32,
+) -> Vec<Validator> {
+    validators
+        .into_iter()
+        .sorted_by_key(|v| Reverse(v.bonded_amount))
+        .take(max_validators as usize)
+        .collect()
+}
+```
+
+### 2. GRANDPA Finality
+
+- Finalizes blocks in batches
+- 1/3 Byzantine fault tolerance
+- Fast finality (12-60 seconds)
+
+## Parachain Security
+
+### 1. Collator Nodes
+
+```rust
+// Collator responsibilities
+impl Collator {
+    fn propose_block(&self) -> Block {
+        // 1. Gather transactions
+        let extrinsics = self.pool.ready();
+        
+        // 2. Create candidate
+        let candidate = Candidate {
+            parachain_id: self.para_id,
+            relay_parent: self.relay_parent,
+            extrinsics,
+            // ...
+        };
+        
+        // 3. Sign and broadcast
+        let signature = self.key.sign(&candidate.hash());
+        self.network.broadcast_candidate(candidate, signature)
+    }
+}
+```
+
+### 2. Availability & Validity
+
+- **Availability**: Data is published
+- **Validity**: State transitions are correct
+- **Backing**: 2/3 of validators must approve
+
+## Cross-Chain Security
+
+### XCM (Cross-Consensus Messaging)
+
+```rust
+// XCM message format
+let message = Xcm::<()> {
+    // Origin and destination
+    origin: Some(Parachain(1000).into()),
+    dest: (Parent, Parachain(2000)).into(),
+    
+    // Instructions
+    instructions: vec![
+        WithdrawAsset((Here, 100).into()),  // Reserve 100 tokens
+        BuyExecution { 
+            fees: (Here, 100).into(),
+            weight_limit: Limited(3_000_000),
+        },
+        DepositAsset {
+            assets: All.into(),
+            max_assets: 1,
+            beneficiary: (Parent, Parachain(2000), AccountId32 { /* ... */ }).into(),
+        },
+    ],
+};
+```
+
+## Security Best Practices
+
+1. **For Parachain Developers**
+   - Implement proper weight calculations
+   - Use bounded execution
+   - Test with zombienet
+
+2. **For Validators**
+   - Use HSMs for key management
+   - Monitor node performance
+   - Stay updated with client releases
+
+3. **For Nominators**
+   - Diversify nominations
+   - Monitor validator performance
+   - Use proxy accounts
+
+## Monitoring Tools
+
+1. **Polkadot-JS**
+   - Chain state inspection
+   - Extrinsic submission
+   - Event monitoring
+
+2. **SubVT**
+   - Validator monitoring
+   - Performance metrics
+   - Alerting system
+
+3. **Polkascan**
+   - Block explorer
+   - Transaction history
+   - Account monitoring
+
+## Resources
+- [Polkadot Security](https://wiki.polkadot.network/docs/learn-security)
+- [Substrate Security](https://docs.substrate.io/main-docs/security/)
+- [Polkadot Bug Bounty](https://immunefi.com/bounty/polkadot/)

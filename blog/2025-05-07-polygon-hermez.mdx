@@ -1,0 +1,162 @@
+---
+title: "Polygon Hermez Architecture"
+description: "ZK-Rollup for payments and transfers"
+date: "2025-05-07"
+categories: ["Ethereum", "ZK-Rollups", "Payments"]
+author: "Sarwagya"
+---
+
+# Polygon Hermez Implementation
+
+## Core Architecture
+
+### 1. Token Smart Contract
+
+```solidity
+// Hermez token interface
+interface IHermez {
+    function registerPackedAmount(
+        bytes32 packedAmount
+    ) external returns (uint256);
+    
+    function transfer(
+        address to,
+        uint256 amount,
+        uint256 fee
+    ) external returns (bool);
+    
+    function getAccountInfo(
+        address account
+    ) external view returns (uint256, uint256);
+}
+```
+
+### 2. Rollup Contract
+
+```solidity
+contract HermezRollup {
+    struct Batch {
+        bytes32 oldStateRoot;
+        bytes32 newStateRoot;
+        bytes32 exitRoot;
+        uint32 batchNum;
+        uint64 timestamp;
+        address aggregator;
+    }
+    
+    mapping(uint256 => Batch) public batches;
+    
+    function verifyProof(
+        uint256[2] calldata proofA,
+        uint256[2][2] calldata proofB,
+        uint256[2] calldata proofC,
+        uint256[5] calldata input
+    ) public view returns (bool) {
+        // Verify zk-SNARK proof
+        return verifyProof(proofA, proofB, proofC, input);
+    }
+}
+```
+
+## Account Model
+
+### 1. Account Creation
+
+```typescript
+// Create Hermez account
+async function createAccount(
+    privateKey: string
+): Promise<{hermezEthereumAddress: string, hezBJJ: string}> {
+    const wallet = new Wallet(privateKey);
+    const hezBJJ = await generateBJJKeyPair();
+    
+    return {
+        hermezEthereumAddress: wallet.address,
+        hezBJJ: hezBJJ
+    };
+}
+```
+
+### 2. Transaction Flow
+
+```typescript
+// Create transfer transaction
+async function createTransfer(
+    from: string,
+    to: string,
+    amount: bigint,
+    fee: bigint,
+    nonce: number
+): Promise<Transfer> {
+    return {
+        from: from,
+        to: to,
+        tokenId: 0, // ETH
+        amount: amount,
+        fee: fee,
+        nonce: nonce,
+        rqOffset: 0,
+        type: 'Transfer'
+    };
+}
+```
+
+## Security Features
+
+### 1. Exit Mechanism
+
+```solidity
+function exit(
+    uint256 batchNum,
+    uint256 accountIndex,
+    bytes calldata merkleProof
+) external {
+    // Verify merkle proof
+    require(
+        verifyMerkleProof(
+            batches[batchNum].exitRoot,
+            accountIndex,
+            merkleProof
+        ),
+        "Invalid proof"
+    );
+    
+    // Process exit
+    // ...
+}
+```
+
+### 2. Forced Transactions
+
+```solidity
+function forceExit(
+    address owner,
+    uint256 amount,
+    uint256 batchNum
+) external {
+    require(
+        block.timestamp > batches[batchNum].timestamp + EXIT_DELAY,
+        "Exit delay not passed"
+    );
+    
+    // Process forced exit
+    // ...
+}
+```
+
+## Performance
+
+1. **Throughput**
+   - 2,000+ TPS
+   - Batch processing
+   - Parallel proof generation
+
+2. **Finality**
+   - 10-minute finality
+   - Fast withdrawals
+   - Emergency mode
+
+## Resources
+- [Hermez Documentation](https://docs.hermez.io/)
+- [zkEVM Specs](https://zkevm.polygon.technology/)
+- [Hermez GitHub](https://github.com/0xPolygonHermez)

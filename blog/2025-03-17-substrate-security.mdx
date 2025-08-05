@@ -1,0 +1,139 @@
+---
+title: "Substrate Blockchain Security"
+description: "Building secure blockchains with Substrate"
+date: "2025-03-17"
+categories: ["Blockchain", "Substrate", "Rust"]
+author: "Sarwagya"
+---
+
+# Substrate Security Best Practices
+
+## Runtime Security
+
+### 1. Weight Calculation
+
+```rust
+// Proper weight calculation in pallet
+#[pallet::call]
+impl<T: Config> Pallet<T> {
+    #[pallet::weight(
+        T::WeightInfo::transfer()
+        .saturating_add(*amount as Weight)
+        .saturating_add(T::DbWeight::get().reads_writes(1, 1))
+    )]
+    pub fn transfer(
+        origin: OriginFor<T>,
+        to: T::AccountId,
+        #[pallet::compact] amount: T::Balance,
+    ) -> DispatchResult {
+        // Implementation...
+        Ok(())
+    }
+}
+```
+
+### 2. Origin Checks
+
+```rust
+// Secure origin verification
+ensure_root(origin.clone())
+    .or_else(|_| ensure_signed(origin))
+    .map_err(|_| Error::<T>::Unauthorized)?;
+
+// Specific origin check
+ensure_signed(origin)?;
+ensure_root(origin)?;
+ensure_none(origin)?;
+```
+
+## Common Vulnerabilities
+
+1. **Arithmetic Over/Underflows**
+   ```rust
+   // Use checked_* methods
+   let new_balance = balance.checked_add(amount).ok_or(Error::Overflow)?;
+   ```
+
+2. **Replay Attacks**
+   ```rust
+   // Include nonce in transactions
+   let nonce = frame_system::Pallet::<T>::account_nonce(&sender);
+   ensure!(nonce == expected_nonce, Error::InvalidNonce);
+   ```
+
+3. **Storage Attacks**
+   ```rust
+   // Limit storage growth
+   ensure!(items.len() < MAX_ITEMS, Error::TooManyItems);
+   ```
+
+## Security Features
+
+### 1. Off-Chain Workers
+
+```rust
+#[pallet::hooks]
+impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
+    fn offchain_worker(block_number: T::BlockNumber) {
+        // Validate data before submission
+        if let Err(e) = Self::validate_offchain_data() {
+            log::error!("Validation failed: {:?}", e);
+            return;
+        }
+        // Submit validated data
+    }
+}
+```
+
+### 2. Benchmarking
+
+```rust
+// Benchmark for weight calculation
+#[benchmark]
+fn transfer() {
+    let caller: T::AccountId = whitelisted_caller();
+    let transfer_amount = T::Currency::minimum_balance() * 10u32.into();
+    
+    #[extrinsic_call]
+    _(RawOrigin::Signed(caller), recipient::<T>(), transfer_amount);
+}
+
+impl_benchmark_test_suite!(
+    Pallet,
+    crate::mock::new_test_ext(),
+    crate::mock::Test
+);
+```
+
+## Testing Strategy
+
+1. **Unit Tests**
+   ```rust
+   #[test]
+   fn test_transfer() {
+       new_test_ext().execute_with(|| {
+           // Test cases
+       });
+   }
+   ```
+
+2. **Integration Tests**
+   ```rust
+   #[test]
+   fn test_end_to_end() {
+       // Cross-pallet tests
+   }
+   ```
+
+3. **Fuzz Testing**
+   ```rust
+   #[test]
+   fn fuzz_transfer() {
+       // Fuzzing with proptest
+   }
+   ```
+
+## Resources
+- [Substrate Security Checklist](https://docs.substrate.io/main-docs/security/)
+- [Rust Secure Code Guidelines](https://anssi-fr.github.io/rust-guide/)
+- [Substrate Recipes](https://substrate.dev/recipes/)
