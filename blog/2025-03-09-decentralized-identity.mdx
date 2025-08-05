@@ -1,0 +1,154 @@
+---
+title: "Decentralized Identity with DIDs"
+description: "Self-sovereign identity on blockchain"
+date: "2025-03-09"
+categories: ["Blockchain", "Identity", "Privacy"]
+author: "Sarwagya"
+---
+
+# Decentralized Identity
+
+## 1. DID Documents
+
+### 1.1 Basic Structure
+```json
+{
+  "@context": "https://www.w3.org/ns/did/v1",
+  "id": "did:ethr:0x123...abc",
+  "verificationMethod": [{
+    "id": "#keys-1",
+    "type": "EcdsaSecp256k1VerificationKey2019",
+    "controller": "did:ethr:0x123...abc",
+    "publicKeyHex": "02b97c30..."
+  }],
+  "authentication": ["#keys-1"],
+  "service": [{
+    "id":"#vcs",
+    "type":"VerifiableCredentialService",
+    "serviceEndpoint":"https://issuer.example/credentials"
+  }]
+}
+```
+
+## 2. Verifiable Credentials
+
+### 2.1 Credential Structure
+```json
+{
+  "@context": [
+    "https://www.w3.org/2018/credentials/v1",
+    "https://schema.org"
+  ],
+  "id": "http://example.edu/credentials/3732",
+  "type": ["VerifiableCredential", "UniversityDegreeCredential"],
+  "issuer": "did:ethr:0x123...abc",
+  "issuanceDate": "2025-03-09T10:00:00Z",
+  "credentialSubject": {
+    "id": "did:ethr:0x456...def",
+    "degree": {
+      "type": "BachelorDegree",
+      "name": "BSc in Computer Science"
+    }
+  },
+  "proof": {
+    "type": "EcdsaSecp256k1Signature2019",
+    "created": "2025-03-09T10:00:00Z",
+    "proofPurpose": "assertionMethod",
+    "verificationMethod": "did:ethr:0x123...abc#keys-1",
+    "jws": "eyJhbGciOiJFUzI1NkstUiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19..."
+  }
+}
+```
+
+## 3. Smart Contract Registry
+
+### 3.1 DID Registry
+```solidity
+contract DIDRegistry {
+    struct DID {
+        address owner;
+        uint256 updated;
+        mapping(bytes32 => bytes) attributes;
+    }
+    
+    mapping(address => DID) public dids;
+    
+    function setAttribute(
+        address identity,
+        bytes32 name,
+        bytes calldata value
+    ) external {
+        require(msg.sender == dids[identity].owner, "Not authorized");
+        dids[identity].attributes[name] = value;
+        dids[identity].updated = block.timestamp;
+    }
+}
+```
+
+## 4. Zero-Knowledge Proofs
+
+### 4.1 Selective Disclosure
+```rust
+// Prove age >= 21 without revealing exact age
+let age_proof = Prover::create_proof(
+    &params,
+    &pk,
+    &[
+        // Public inputs
+        ("min_age", 21),
+        // Private inputs
+        ("age", 25),
+    ],
+);
+
+// Verifier only checks proof, never sees actual age
+let is_valid = Verifier::verify_proof(
+    &params,
+    &vk,
+    &[("min_age", 21)],
+    &proof
+);
+```
+
+## 5. Implementation
+
+### 5.1 DID Resolver
+```typescript
+import { Resolver } from 'did-resolver';
+import { getResolver } from 'ethr-did-resolver';
+
+// Configure resolver
+const provider = new Web3Provider(window.ethereum);
+const ethrResolver = getResolver({
+  rpcUrl: 'https://mainnet.infura.io/v3/YOUR-PROJECT-ID',
+  registry: '0xdca7ef03e98e0dc2b855be647c39abe984fcf21b'
+});
+
+const didResolver = new Resolver(ethrResolver);
+
+// Resolve a DID
+didResolver.resolve('did:ethr:0x123...abc')
+  .then(doc => console.log(doc));
+```
+
+## 6. Best Practices
+
+1. **Key Management**
+   - Use hardware security modules (HSMs)
+   - Implement key rotation
+   - Backup recovery methods
+
+2. **Privacy**
+   - Minimize on-chain data
+   - Use zero-knowledge proofs
+   - Consider GDPR compliance
+
+3. **Interoperability**
+   - Follow W3C standards
+   - Support multiple DID methods
+   - Use common credential formats
+
+## 7. Resources
+- [W3C DID Spec](https://www.w3.org/TR/did-core/)
+- [Verifiable Credentials](https://www.w3.org/TR/vc-data-model/)
+- [ethr-did](https://github.com/uport-project/ethr-did)

@@ -3,6 +3,7 @@ import "@/styles/index.css";
 import { ThemeProvider } from "@/components/providers/theme";
 import { Footer } from "@/components/shared/footer";
 import { Newsletter } from "@/components/shared/newsletter";
+import { Toaster } from "@/components/ui/toaster";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -56,10 +57,11 @@ export default function RootLayout({
 		<html lang="en">
 			<body>
 				<ThemeProvider>
+					<Toaster />
 					<main className="px-4 md:px-8 lg:px-12 selection:bg-foreground selection:text-background bg-backdrop">
 						<Navbar />
 						{children}
-						{/* <Newsletter /> */}
+						<Newsletter />
 						<Footer />
 					</main>
 				</ThemeProvider>

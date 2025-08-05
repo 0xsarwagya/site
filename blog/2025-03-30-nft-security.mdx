@@ -1,0 +1,93 @@
+---
+title: "NFT Security Best Practices"
+description: "Securing NFT projects and marketplaces"
+date: "2025-03-30"
+categories: ["Blockchain", "NFTs", "Security"]
+author: "Sarwagya"
+---
+
+# NFT Security Essentials
+
+## Understanding NFT Vulnerabilities
+
+Non-fungible tokens (NFTs) have introduced unique security challenges that differ from traditional token standards. The most common vulnerabilities include:
+
+1. **Reentrancy Attacks**: Malicious contracts can re-enter NFT contracts during transfers if proper checks aren't in place.
+
+2. **Approval Issues**: Overly permissive `setApprovalForAll` implementations can lead to asset theft.
+
+3. **Metadata Tampering**: Centralized metadata storage can be altered, changing the NFT's appearance or attributes.
+
+## Secure Implementation Patterns
+
+### 1. Reentrancy Protection
+
+```solidity
+// Use OpenZeppelin's ReentrancyGuard
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+contract NFTSecure is ERC721, ReentrancyGuard {
+    function safeMint(address to, uint256 tokenId) 
+        external 
+        nonReentrant 
+    {
+        _safeMint(to, tokenId);
+    }
+}
+```
+
+### 2. Secure Transfers
+
+```solidity
+function safeTransferFrom(
+    address from,
+    address to,
+    uint256 tokenId,
+    bytes memory _data
+) public virtual override {
+    require(_isApprovedOrOwner(_msgSender(), tokenId), "Not approved");
+    _safeTransfer(from, to, tokenId, _data);
+}
+```
+
+## Best Practices
+
+1. **Use Established Standards**:
+   - ERC-721 for NFTs
+   - ERC-2981 for royalty information
+   - ERC-4907 for rental NFTs
+
+2. **Metadata Security**:
+   - Use IPFS or Arweave for decentralized storage
+   - Implement proper access controls
+   - Consider on-chain metadata for critical attributes
+
+3. **Royalty Protection**:
+   - Implement royalty enforcement
+   - Use EIP-2981 for standard royalty information
+   - Consider on-chain royalty enforcement
+
+4. **Testing**:
+   - Comprehensive unit tests
+   - Fuzz testing for edge cases
+   - Formal verification for critical functions
+
+5. **Access Control**:
+   - Implement role-based access control
+   - Use OpenZeppelin's AccessControl
+   - Time-lock administrative functions
+
+## Common Pitfalls to Avoid
+
+1. **Over-optimization**: Gas optimizations should never compromise security.
+
+2. **Missing Events**: Emit events for all state changes to improve transparency.
+
+3. **Unbounded Loops**: Can lead to out-of-gas errors with large collections.
+
+4. **Frontrunning**: Implement commit-reveal schemes for fair mints.
+
+## Resources
+- [OpenZeppelin NFT Contracts](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/master/contracts/token/ERC721)
+- [EIP-721 Standard](https://eips.ethereum.org/EIPS/eip-721)
+- [NFT Security Checklist](https://github.com/0xKitsune/nft-security-checklist)

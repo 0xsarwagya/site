@@ -1,0 +1,172 @@
+---
+title: "Blockchain Interoperability Protocols"
+description: "Connecting heterogeneous blockchain networks"
+date: "2025-03-18"
+categories: ["Blockchain", "Interoperability", "DeFi"]
+author: "Sarwagya"
+---
+
+# Cross-Chain Communication
+
+## 1. Protocol Types
+
+### 1.1 Hash Time-Locked Contracts (HTLC)
+```solidity
+contract HTLC {
+    bytes32 public hash;
+    address payable public recipient;
+    uint public timeout;
+    
+    constructor(bytes32 _hash, uint _timeout) payable {
+        hash = _hash;
+        timeout = block.timestamp + _timeout;
+        recipient = payable(msg.sender);
+    }
+    
+    function withdraw(bytes32 secret) external {
+        require(sha256(abi.encodePacked(secret)) == hash, "Invalid secret");
+        selfdestruct(payable(msg.sender));
+    }
+    
+    function refund() external {
+        require(block.timestamp >= timeout, "Too early");
+        selfdestruct(recipient);
+    }
+}
+```
+
+## 2. Cross-Chain Bridges
+
+### 2.1 Lock and Mint
+```solidity
+contract Bridge {
+    mapping(bytes32 => bool) public processed;
+    
+    function lockAndMint(
+        address token,
+        uint256 amount,
+        uint256 targetChain,
+        address recipient
+    ) external {
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
+        emit Locked(token, msg.sender, amount, targetChain, recipient);
+    }
+    
+    function release(
+        address token,
+        address recipient,
+        uint256 amount,
+        bytes32 sourceTxHash,
+        uint256 sourceChainId
+    ) external onlyRelayer {
+        bytes32 id = keccak256(abi.encodePacked(
+            sourceChainId, sourceTxHash, token, recipient, amount
+        ));
+        require(!processed[id], "Already processed");
+        processed[id] = true;
+        IERC20(token).transfer(recipient, amount);
+    }
+}
+```
+
+## 3. Inter-Blockchain Communication (IBC)
+
+### 3.1 Light Client Verification
+```go
+type ClientState struct {
+    ChainID         string
+    TrustingPeriod  time.Duration
+    LatestHeight    int64
+    FrozenHeight    int64
+    ValidatorSet    *types.ValidatorSet
+}
+
+func VerifyClientConsensusState(
+    clientState ClientState,
+    height int64,
+    proof []byte,
+    consensusState ConsensusState,
+) error {
+    // Verify proof against stored root
+    if !VerifyMerkleProof(
+        clientState.LatestHeight,
+        proof,
+        consensusState.Root,
+        consensusState.GetCommitmentPath(),
+    ) {
+        return errors.New("invalid consensus state proof")
+    }
+    return nil
+}
+```
+
+## 4. Atomic Swaps
+
+### 4.1 Cross-Chain Atomic Swap
+```typescript
+async function atomicSwap(
+    chainA: Chain,
+    chainB: Chain,
+    assetA: string,
+    assetB: string,
+    amountA: bigint,
+    amountB: bigint,
+    participant: string
+) {
+    // Generate secret and hash
+    const secret = randomBytes(32);
+    const hash = keccak256(secret);
+    
+    // Initiate swap on both chains
+    const txA = await chainA.initiateSwap(hash, assetA, amountA, participant);
+    const txB = await chainB.initiateSwap(hash, assetB, amountB, participant);
+    
+    // Wait for confirmations
+    await Promise.all([txA.wait(), txB.wait()]);
+    
+    // Complete both swaps
+    await chainA.completeSwap(secret);
+    await chainB.completeSwap(secret);
+}
+```
+
+## 5. Security Considerations
+
+### 5.1 Bridge Risks
+- Validator collusion
+- Signature threshold bypass
+- Oracle manipulation
+- Reentrancy attacks
+
+## 6. Implementation
+
+### 6.1 Wormhole Integration
+```javascript
+const { connect, CHAINS, CONTRACTS } = require('@wormhole-foundation/connect-sdk');
+
+async function transferToken() {
+    // Initialize SDK
+    const wh = await connect('mainnet');
+    
+    // Get token bridge
+    const bridge = await wh.getTokenBridge('ethereum');
+    
+    // Transfer 1 ETH to Solana
+    const tx = await bridge.transfer(
+        '0x123...', // sender
+        CHAINS.ETHEREUM,
+        CHAINS.SOLANA,
+        '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', // Native ETH
+        1e18, // 1 ETH
+        'SOL_ADDRESS', // recipient
+        { gasLimit: 500000 }
+    );
+    
+    console.log('Transfer initiated:', tx);
+}
+```
+
+## 7. Resources
+- [IBC Protocol](https://ibcprotocol.org/)
+- [Wormhole Docs](https://wormhole.com/developer-docs/)
+- [LayerZero](https://layerzero.network/)

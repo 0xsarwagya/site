@@ -4,7 +4,7 @@ import { allPosts } from "content-collections";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-const POSTS_PER_PAGE = 6; // Number of posts per page
+const POSTS_PER_PAGE = 9; // Number of posts per page
 
 interface BlogDisplayProps {
 	currentPage: number;
@@ -42,7 +42,7 @@ export const BlogDisplay = ({ currentPage }: BlogDisplayProps) => {
 	};
 
 	return (
-		<section className="relative border p-4 md:p-8 lg:p-12">
+		<section id="content" className="relative border p-4 md:p-8 lg:p-12">
 			<div className="grid grid-cols-1 xl:grid-cols-3 gap-y-10 gap-x-6 items-start p-8">
 				{paginatedPosts.map((post) => (
 					<Link

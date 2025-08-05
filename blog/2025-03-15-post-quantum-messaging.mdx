@@ -1,0 +1,127 @@
+---
+title: "Post-Quantum Secure Messaging"
+description: "Quantum-resistant encryption for private communication"
+date: "2025-03-15"
+categories: ["Cryptography", "Quantum", "Security"]
+author: "Sarwagya"
+---
+
+# Post-Quantum Messaging
+
+## 1. Lattice-Based Encryption
+
+### 1.1 Kyber Key Exchange
+```python
+# Key generation
+def keygen():
+    sk = kyber.SecretKey.generate()
+    pk = sk.public_key()
+    return (pk, sk)
+
+# Encapsulation
+def encap(pk):
+    c, ss = pk.encapsulate()
+    return (c, ss)  # (ciphertext, shared secret)
+
+# Decapsulation
+def decap(sk, c):
+    return sk.decapsulate(c)
+```
+
+## 2. Signature Schemes
+
+### 2.1 Dilithium Signatures
+```python
+# Key generation
+sk = dilithium.SecretKey.generate()
+pk = sk.public_key()
+
+# Sign message
+message = b"Hello, quantum future!"
+signature = sk.sign(message)
+
+# Verify signature
+assert pk.verify(message, signature)
+```
+
+## 3. Hybrid Schemes
+
+### 3.1 Combining Classical and PQ Crypto
+```go
+func hybridEncrypt(pk *kyber.PublicKey, msg []byte) ([]byte, error) {
+    // Generate ephemeral ECDH key
+    ephPriv, _ := ecdh.P256().GenerateKey(rand.Reader)
+    ephPub := ephPriv.PublicKey()
+    
+    // Derive symmetric keys
+    pqKemCiphertext, pqKey := pk.Encapsulate()
+    classicSecret, _ := ephPriv.ECDH(recipientECPub)
+    
+    // KDF to derive encryption keys
+    keyMaterial := hkdf.Extract(sha256.New, 
+        append(pqKey, classicSecret...),
+        []byte("HYBRID-KEY"))
+    
+    // Encrypt with AES-GCM
+    block, _ := aes.NewCipher(keyMaterial[:32])
+    gcm, _ := cipher.NewGCM(block)
+    nonce := make([]byte, gcm.NonceSize())
+    rand.Reader.Read(nonce)
+    
+    // Return encrypted data + metadata
+    return append(append(ephPub.Bytes(), pqKemCiphertext...), 
+        gcm.Seal(nil, nonce, msg, nil)...), nil
+}
+```
+
+## 4. Implementation
+
+### 4.1 liboqs Integration
+```c
+#include <oqs/oqs.h>
+
+int main() {
+    OQS_KEM *kem = OQS_KEM_new(OQS_KEM_alg_kyber_1024);
+    
+    uint8_t public_key[OQS_KEM_kyber_1024_length_public_key];
+    uint8_t secret_key[OQS_KEM_kyber_1024_length_secret_key];
+    
+    // Generate key pair
+    OQS_KEM_keypair(kem, public_key, secret_key);
+    
+    // Encapsulate
+    uint8_t ciphertext[OQS_KEM_kyber_1024_length_ciphertext];
+    uint8_t shared_secret_e[OQS_KEM_kyber_1024_length_shared_secret];
+    OQS_KEM_encaps(kem, ciphertext, shared_secret_e, public_key);
+    
+    // Decapsulate
+    uint8_t shared_secret_d[OQS_KEM_kyber_1024_length_shared_secret];
+    OQS_KEM_decaps(kem, shared_secret_d, ciphertext, secret_key);
+    
+    // Verify
+    assert(memcmp(shared_secret_e, shared_secret_d, 
+           OQS_KEM_kyber_1024_length_shared_secret) == 0);
+    
+    OQS_KEM_free(kem);
+    return 0;
+}
+```
+
+## 5. Best Practices
+
+1. **Hybrid Approach**
+   - Combine classical and PQ algorithms
+   - Use X25519 + Kyber-1024
+   
+2. **Key Management**
+   - Rotate keys frequently
+   - Use HSM for key storage
+   
+3. **Performance**
+   - Benchmark on target hardware
+   - Consider hardware acceleration
+
+## 6. Resources
+- [NIST PQC Standardization](https://csrc.nist.gov/projects/post-quantum-cryptography)
+- [liboqs](https://openquantumsafe.org/)
+- [Signal's PQXDH](https://signal.org/docs/)

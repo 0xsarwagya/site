@@ -1,0 +1,86 @@
+---
+title: "Formal Verification in Solidity"
+description: "Proving smart contract correctness with math"
+date: "2025-03-03"
+categories: ["Blockchain", "Security", "Formal Methods"]
+author: "Sarwagya"
+---
+
+# Formal Verification Guide
+
+## 1. Specification Languages
+
+### 1.1 Certora Rules
+```certora
+// ERC20Transfer.spec
+methods {
+    function transfer(address to, uint256 value) external returns (bool);
+}
+
+rule transferPreservesTotalSupply() {
+    env e;
+    uint256 supplyBefore = totalSupply();
+    transfer@withrevert(e.msg.sender, e.msg.value);
+    assert !lastReverted => totalSupply() == supplyBefore,
+        "total supply changed";
+}
+```
+
+## 2. Tools
+
+### 2.1 Foundry + Solidity SMTChecker
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+/// @custom:invariant totalSupply <= type(uint200).max
+erc20 {
+    mapping(address => uint256) balanceOf;
+    uint256 totalSupply;
+    
+    function transfer(address to, uint256 amount) public {
+        balanceOf[msg.sender] -= amount;
+        balanceOf[to] += amount;
+    }
+}
+```
+
+## 3. Common Patterns
+
+### 3.1 State Machine Verification
+```solidity
+enum State { Created, Active, Paused, Terminated }
+
+contract StateMachine {
+    State public state = State.Created;
+    
+    /// @notice Ensures valid state transitions
+    function nextState() public {
+        State oldState = state;
+        if (state == State.Created) state = State.Active;
+        else if (state == State.Active) state = State.Paused;
+        else if (state == State.Paused) state = State.Active;
+        
+        assert("Invalid state transition" &&
+            (oldState == State.Created && state == State.Active) ||
+            (oldState == State.Active && state == State.Paused) ||
+            (oldState == State.Paused && state == State.Active)
+        );
+    }
+}
+```
+
+## 4. Verification Process
+
+### 4.1 Steps
+1. Write specifications
+2. Define invariants
+3. Run prover
+4. Analyze counterexamples
+5. Fix issues
+6. Repeat
+
+## 5. Resources
+- [Certora Docs](https://docs.certora.com/)
+- [Foundry Book](https://book.getfoundry.sh/)
+- [SMTChecker](https://docs.soliditylang.org/en/latest/smtchecker.html)

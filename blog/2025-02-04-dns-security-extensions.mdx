@@ -1,0 +1,262 @@
+---
+title: "DNS Security Extensions (DNSSEC) Implementation Guide"
+description: "A comprehensive technical guide to deploying DNSSEC with modern best practices for security and performance."
+date: "2025-02-04"
+categories: ["Network Security", "DNS", "DNSSEC"]
+author: "Sarwagya"
+---
+
+# DNS Security Extensions (DNSSEC) Implementation Guide
+
+> How to secure your domain names against cache poisoning and spoofing attacks with DNSSEC.
+
+## 1. DNSSEC Fundamentals
+
+### 1.1 How DNSSEC Works
+- **Chain of Trust**: Hierarchical signature validation from root to TLD to your domain
+- **Resource Record Signatures (RRSIG)**: Digital signatures for DNS records
+- **DNSKEY**: Public keys for signature verification
+- **DS Records**: Delegation Signer records in parent zone
+- **NSEC/NSEC3**: Authenticated denial of existence
+
+### 1.2 Key Types
+```
+ZSK (Zone Signing Key)
+├── Used to sign all records in the zone
+└── Shorter key length (2048-bit RSA / 256-bit ECDSA)
+
+KSK (Key Signing Key)
+├── Used to sign DNSKEY records
+└── Longer key length (3072-bit RSA / 256-bit ECDSA)
+```
+
+## 2. Implementation Steps
+
+### 2.1 Generate Keys
+```bash
+# Generate ZSK (ECDSA P-256)
+pdnsutil generate-zone-key example.com ecdsa256
+
+# Generate KSK (ECDSA P-256 with KSK flag)
+pdnsutil generate-zone-key example.com ecdsa256 ksk
+```
+
+### 2.2 Sign Zone
+```bash
+# Sign the zone with both keys
+pdnsutil secure-zone example.com
+pdnsutil set-nsec3 '1 0 10 ABCDEF' example.com  # Enable NSEC3
+pdnsutil increase-serial example.com
+```
+
+### 2.3 DS Record Generation
+```bash
+# Generate DS record for parent zone
+dig +norec +dnssec @8.8.8.8 dnskey example.com | \
+    dnssec-dsfromkey -f - example.com
+```
+
+## 3. Configuration Examples
+
+### 3.1 BIND9 Configuration
+```named.conf
+options {
+    dnssec-enable yes;
+    dnssec-validation auto;
+    dnssec-lookaside auto;
+    
+    // Enable EDNS0 for larger responses
+    edns-udp-size 4096;
+    max-udp-size 4096;
+};
+
+zone "example.com" {
+    type master;
+    file "/etc/bind/zones/db.example.com.signed";
+    auto-dnssec maintain;
+    key-directory "/etc/bind/keys";
+    update-policy local;
+};
+```
+
+### 3.2 PowerDNS Configuration
+```pdns.conf
+launch=gsqlite3
+gsqlite3-database=/var/lib/powerdns/pdns.sqlite3
+dnssec=yes
+allow-dnsupdate-from=127.0.0.1
+default-ksk-algorithm=ecdsa256
+default-ksk-size=256
+default-zsk-algorithm=ecdsa256
+default-zsk-size=256
+```
+
+## 4. Automation with Let's Encrypt
+
+### 4.1 Certbot Hook for DNSSEC
+```python
+# /etc/letsencrypt/renewal-hooks/deploy/dnssec-update.py
+import subprocess
+import os
+
+def update_dnssec():
+    zone = os.environ.get('CERTBOT_DOMAIN')
+    if not zone:
+        return
+    
+    # Re-sign zone
+    subprocess.run(['pdnsutil', 'increase-serial', zone])
+    
+    # Notify slaves
+    subprocess.run(['pdns_control', 'notify', zone])
+
+if __name__ == '__main__':
+    update_dnssec()
+```
+
+## 5. Monitoring and Validation
+
+### 5.1 DNSSEC Validation
+```bash
+# Check DNSSEC validation
+dig +dnssec example.com A @8.8.8.8
+
+# Verify chain of trust
+delv @8.8.8.8 example.com A +rtrace +vtrace
+
+# Check DS record propagation
+dig +short DS example.com
+```
+
+### 5.2 Monitoring with Prometheus
+```yaml
+# dnssec_exporter configuration
+scrape_configs:
+  - job_name: 'dnssec'
+    metrics_path: '/probe'
+    params:
+      target: ['example.com']
+      module: [dns_sec]
+    static_configs:
+      - targets: ['dnssec-exporter:9110']
+```
+
+## 6. Performance Optimization
+
+### 6.1 Pre-signed Zones
+```bash
+# Pre-sign zone for better performance
+ldns-signzone -n -p -s $(head -n 1000 /dev/urandom | sha1sum | cut -b 1-16) \
+    -f zone.signed zone.raw $(ls -t Kexample.com.*.key | head -2)
+```
+
+### 6.2 TTL Strategy
+```
+Record Type       | TTL
+------------------|---------
+SOA              | 1h
+DNSKEY           | 24h
+RRSIG DNSKEY     | 24h
+DS               | 24h
+RRSIG DS         | 24h
+Other RRSIGs     | 7d
+NS               | 48h
+A/AAAA           | 5m-1h
+MX/TXT/CNAME     | 1h
+```
+
+## 7. Advanced Topics
+
+### 7.1 DANE (DNS-based Authentication of Named Entities)
+```bash
+# Generate TLSA record for HTTPS
+echo "_443._tcp.www.example.com. IN TLSA \
+    3 1 1 $(openssl x509 -in cert.pem -pubkey -noout | \
+    openssl pkey -pubin -outform DER | \
+    openssl dgst -sha256 -hex | \
+    cut -d' ' -f2)"
+```
+
+### 7.2 DNSSEC Key Rollover
+```bash
+# KSK Rollover (Double-Signature Method)
+# 1. Add new KSK
+pdnsutil add-zone-key example.com ksk active ecdsa256
+
+# 2. Publish DS record at registrar
+pdnsutil show-zone example.com
+
+# 3. After DS propagates (TTL), remove old KSK
+pdnsutil remove-zone-key example.com <old_ksk_id>
+```
+
+## 8. Troubleshooting
+
+### 8.1 Common Issues
+```
+Symptom: SERVFAIL
+- Check key timestamps (check-zone)
+- Verify DS record matches DNSKEY
+- Check for NSEC/NSEC3 configuration mismatch
+
+Symptom: Bogus
+- Check parent zone DS records
+- Verify RRSIG expiration
+- Check for clock skew on servers
+```
+
+### 8.2 Diagnostic Commands
+```bash
+# Check DNSSEC validation chain
+drill -S -T example.com @8.8.8.8
+
+# Verify DNSSEC signatures
+dnssec-verify -z example.com db.example.com.signed
+
+# Check key timing
+pdnsutil show-zone example.com
+```
+
+## 9. Security Considerations
+
+### 9.1 Key Management
+- Store private keys offline
+- Use HSM for KSK storage
+- Implement key rollover procedures
+- Monitor key expiration
+
+### 9.2 Attack Mitigation
+- Enable Query Rate Limiting
+- Implement Response Rate Limiting (RRL)
+- Use TCP fallback for large responses
+- Monitor for unusual query patterns
+
+## 10. Cloud Provider Integration
+
+### 10.1 AWS Route 53
+```hcl
+# Enable DNSSEC for Route 53 hosted zone
+resource "aws_route53_zone" "example" {
+  name = "example.com"
+}
+
+resource "aws_route53_key_signing_key" "example" {
+  hosted_zone_id            = aws_route53_zone.example.id
+  key_management_service_arn = aws_kms_key.example.arn
+  name                      = "example"
+}
+
+resource "aws_route53_hosted_zone_dnssec" "example" {
+  hosted_zone_id = aws_route53_key_signing_key.example.hosted_zone_id
+  signing_status = "SIGNING"
+}
+```
+
+## Conclusion
+
+DNSSEC provides critical security for the DNS infrastructure, but it requires careful planning and maintenance. By following these best practices, you can ensure a secure and reliable DNSSEC deployment.
+
+## Further Reading
+- [DNSSEC Operational Practices](https://datatracker.ietf.org/doc/html/rfc6781)
+- [Cloudflare DNSSEC Guide](https://www.cloudflare.com/dns/dnssec/)
+- [ICANN DNSSEC Tools](https://www.dnssec-debugger.verisignlabs.com/)

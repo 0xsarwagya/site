@@ -1,0 +1,143 @@
+---
+title: "MEV Protection Techniques"
+description: "Defending against Maximal Extractable Value exploits"
+date: "2025-02-22"
+categories: ["Blockchain", "DeFi", "Security"]
+author: "Sarwagya"
+---
+
+# MEV Protection Strategies
+
+## 1. Private Transactions
+
+### 1.1 Flashbots RPC
+```javascript
+// Send private transaction
+const tx = {
+    to: contractAddress,
+    data: callData,
+    gasPrice: 0
+};
+
+// Use Flashbots RPC endpoint
+const flashbotsProvider = new ethers.providers.JsonRpcProvider(
+    'https://rpc.flashbots.net'
+);
+
+// Send bundle directly to miners
+await flashbotsProvider.send('eth_sendBundle', [{
+    txs: [signedTx],
+    blockNumber: `0x${(await provider.getBlockNumber() + 1).toString(16)}`,
+    minTimestamp: 0,
+    maxTimestamp: 0
+}]);
+```
+
+## 2. Slippage Protection
+
+### 2.1 TWAP Orders
+```solidity
+function executeSwap(
+    address tokenIn,
+    address tokenOut,
+    uint256 amountIn,
+    uint256 minOut,
+    uint256 deadline
+) external {
+    // Get TWAP price from oracle
+    uint256 twapPrice = getTWAP(tokenIn, tokenOut);
+    
+    // Calculate minimum output based on TWAP
+    uint256 expectedOut = amountIn * twapPrice / 1e18;
+    require(expectedOut >= minOut, "Slippage too high");
+    
+    // Execute swap
+    IUniswapV2Pair(pair).swap(
+        tokenOut < tokenIn ? expectedOut : 0,
+        tokenOut < tokenIn ? 0 : expectedOut,
+        msg.sender,
+        new bytes(0)
+    );
+}
+```
+
+## 3. Sandwich Attack Mitigation
+
+### 3.1 Batch Auctions
+```solidity
+struct BatchOrder {
+    address user;
+    address tokenIn;
+    address tokenOut;
+    uint256 amountIn;
+    uint256 minOut;
+}
+
+function executeBatch(BatchOrder[] calldata orders) external {
+    // 1. Collect all orders
+    // 2. Compute clearing price
+    // 3. Execute all trades at same price
+    // 4. Distribute outputs
+}
+```
+
+## 4. Frontrunning Prevention
+
+### 4.1 Commit-Reveal
+```solidity
+mapping(address => bytes32) public commitments;
+
+function commit(bytes32 hash) external {
+    commitments[msg.sender] = hash;
+}
+
+function reveal(
+    uint256 amount,
+    uint256 nonce,
+    bytes32 secret
+) external {
+    require(
+        commitments[msg.sender] == keccak256(abi.encodePacked(amount, nonce, secret)),
+        "Invalid reveal"
+    );
+    
+    // Execute trade
+    delete commitments[msg.sender];
+}
+```
+
+## 5. MEV-Aware Design
+
+### 5.1 Time-Weighted Pricing
+```solidity
+function getVirtualPrice() public view returns (uint256) {
+    uint256 timeElapsed = block.timestamp - lastUpdate;
+    
+    // Adjust price gradually over time
+    if (timeElapsed > 0) {
+        uint256 adjustment = (targetPrice - virtualPrice) * timeElapsed / 3600;
+        return virtualPrice + adjustment;
+    }
+    
+    return virtualPrice;
+}
+```
+
+## 6. Tools & Services
+
+- Flashbots RPC
+- Cow Protocol
+- 1inch Fusion
+- MEV-Share
+
+## 7. Best Practices
+
+1. Use private RPCs
+2. Set conservative slippage
+3. Avoid predictable transaction patterns
+4. Use MEV-protected DEX aggregators
+
+## 8. Resources
+- [Flashbots Docs](https://docs.flashbots.net/)
+- [MEV-Explore](https://explore.flashbots.net/)
+- [EIP-1559](https://eips.ethereum.org/EIPS/eip-1559)

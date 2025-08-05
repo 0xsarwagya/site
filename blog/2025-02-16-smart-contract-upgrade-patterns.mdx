@@ -1,0 +1,87 @@
+---
+title: "Smart Contract Upgrade Patterns"
+description: "Secure patterns for upgrading smart contracts on Ethereum"
+date: "2025-02-16"
+categories: ["Blockchain", "Smart Contracts"]
+author: "Sarwagya"
+---
+
+# Smart Contract Upgrades
+
+## 1. Proxy Patterns
+
+### 1.1 Transparent Proxy
+```solidity
+// Storage layout must match between implementations
+contract Proxy {
+    address implementation;
+    
+    fallback() external payable {
+        address _impl = implementation;
+        assembly {
+            calldatacopy(0, 0, calldatasize())
+            let result := delegatecall(gas(), _impl, 0, calldatasize(), 0, 0)
+            returndatacopy(0, 0, returndatasize())
+            switch result
+            case 0 { revert(0, returndatasize()) }
+            default { return(0, returndatasize()) }
+        }
+    }
+}
+```
+
+### 1.2 UUPS (EIP-1822)
+- Logic contract contains upgrade logic
+- More gas efficient
+- Requires careful access control
+
+## 2. Storage Patterns
+
+### 2.1 Eternal Storage
+```solidity
+library Storage {
+    struct Layout {
+        mapping(bytes32 => uint256) uints;
+        mapping(bytes32 => address) addresses;
+    }
+    
+    function layout() internal pure returns (Layout storage l) {
+        bytes32 slot = keccak256("my.storage");
+        assembly { l.slot := slot }
+    }
+}
+```
+
+## 3. Best Practices
+
+1. **Testing**
+   - Storage layout checks
+   - Upgrade simulation
+   - State migration tests
+
+2. **Security**
+   - Timelock controllers
+   - Multi-sig governance
+   - Emergency pauses
+
+3. **Monitoring**
+   - Event logging
+   - Function call tracing
+   - Storage diffs
+
+## 4. Tools
+
+- OpenZeppelin Upgrades
+- Hardhat Upgrades
+- Tenderly simulations
+
+## 5. Anti-Patterns
+
+- Storage collisions
+- Constructor vs initializer
+- Function selector clashes
+
+## 6. Resources
+- [OpenZeppelin Upgrades](https://docs.openzeppelin.com/upgrades)
+- [EIP-1967](https://eips.ethereum.org/EIPS/eip-1967)
+- [UUPS Pattern](https://eips.ethereum.org/EIPS/eip-1822)

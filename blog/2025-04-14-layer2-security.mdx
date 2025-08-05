@@ -1,0 +1,105 @@
+---
+title: "Layer 2 Security Considerations"
+description: "Securing Ethereum's scaling solutions"
+date: "2025-04-14"
+categories: ["Blockchain", "Layer 2", "Security"]
+author: "Sarwagya"
+---
+
+# Layer 2 Security Landscape
+
+## Security Models Compared
+
+### 1. Rollup Security
+
+**Optimistic Rollups**
+- 7-day challenge period for fraud proofs
+- Single round fault proof
+- Economic security through bonds
+
+**ZK-Rollups**
+- Cryptographic validity proofs
+- No waiting period for withdrawals
+- Trusted setup requirements
+
+### 2. State Channel Security
+```solidity
+// Simplified state channel contract
+contract PaymentChannel {
+    address payable[2] public participants;
+    uint256 public challengePeriod = 1 days;
+    uint256 public expiresAt;
+    
+    struct State {
+        uint256[2] balances;
+        uint256 nonce;
+        bytes signatureA;
+        bytes signatureB;
+    }
+    
+    function challenge(State calldata state) external {
+        require(block.timestamp < expiresAt, "Channel expired");
+        require(verifySignatures(state), "Invalid signatures");
+        
+        // Update state and start challenge period
+        // ...
+    }
+    
+    function settle(State calldata finalState) external {
+        require(block.timestamp > expiresAt + challengePeriod, "Challenge period active");
+        require(verifySignatures(finalState), "Invalid final state");
+        
+        // Distribute funds
+        participants[0].transfer(finalState.balances[0]);
+        participants[1].transfer(finalState.balances[1]);
+    }
+}
+```
+
+## Common Vulnerabilities
+
+1. **Data Availability**
+   - Ensure transaction data is published to L1
+   - Monitor for censorship
+   
+2. **Withdrawal Safety**
+   - Validate withdrawal proofs
+   - Implement emergency exits
+
+3. **Upgrade Mechanisms**
+   - Time-locked upgrades
+   - Multi-sig governance
+
+## Best Practices
+
+1. **For Users**
+   - Verify bridge contracts
+   - Monitor challenge periods
+   - Use trusted validators
+
+2. **For Developers**
+   - Regular security audits
+   - Bug bounty programs
+   - Circuit testing (for ZK-Rollups)
+
+3. **For Validators**
+   - Run redundant nodes
+   - Monitor for invalid state transitions
+   - Maintain sufficient stake
+
+## Monitoring Tools
+
+1. **Block Explorers**
+   - Arbiscan (Arbitrum)
+   - Optimistic Etherscan
+   - zkSync Explorer
+
+2. **Alert Systems**
+   - Tenderly Alerts
+   - OpenZeppelin Defender
+   - Custom monitoring scripts
+
+## Resources
+- [Ethereum Layer 2](https://ethereum.org/en/layer-2/)
+- [Arbitrum Docs](https://developer.offchainlabs.com/)
+- [zkSync Security](https://zksync.io/dev/security.html)

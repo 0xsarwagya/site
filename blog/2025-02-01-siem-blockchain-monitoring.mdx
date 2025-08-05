@@ -1,0 +1,406 @@
+---
+title: "SIEM Rules for Blockchain Event Monitoring"
+description: "A comprehensive guide to building SIEM rules for detecting suspicious blockchain activities and smart contract interactions."
+date: "2025-02-01"
+categories: ["Blockchain", "SIEM", "Security Monitoring"]
+author: "Sarwagya"
+---
+
+# SIEM Rules for Blockchain Event Monitoring
+
+> How to detect hacks, exploits, and anomalies in real-time across multiple blockchains.
+
+## 1. Blockchain Event Sources
+
+### 1.1 Node-Level Logs
+```json
+{
+  "timestamp": "2025-02-01T14:32:15Z",
+  "level": "INFO",
+  "component": "ETH/BlockProcessor",
+  "block": 18456789,
+  "event": "NewBlock",
+  "transactions": 147,
+  "gasUsed": 14999999,
+  "gasLimit": 15000000
+}
+```
+
+### 1.2 Smart Contract Events
+```solidity
+event SuspiciousTransfer(
+    address indexed from,
+    address indexed to,
+    uint256 amount,
+    string reason
+);
+```
+
+### 1.3 RPC Endpoints
+```bash
+# Get transaction receipt
+curl -X POST \
+  -H "Content-Type: application/json" \
+  --data '{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["0x..."],"id":1}'
+```
+
+## 2. Critical SIEM Rules
+
+### 2.1 Flash Loan Attack Detection
+```python
+# Pseudocode for flash loan detection
+function detect_flash_loan(transaction):
+    # Check for multiple token transfers in single transaction
+    transfers = get_token_transfers(transaction.hash)
+    
+    # Look for common flash loan patterns
+    if (len(transfers) > 10 and 
+        any(t['amount'] > 1000 * 1e18 for t in transfers) and
+        transaction.gas_price > 100 * 1e9):
+        
+        alert({
+            'severity': 'critical',
+            'title': 'Possible Flash Loan Attack',
+            'tx_hash': transaction.hash,
+            'value_eth': transaction.value / 1e18,
+            'gas_used': transaction.gas_used,
+            'gas_price': transaction.gas_price
+        })
+```
+
+### 2.2 Reentrancy Attack Detection
+```python
+# Pseudocode for reentrancy detection
+function detect_reentrancy(transaction):
+    # Track external calls during execution
+    call_sequence = get_call_sequence(transaction.trace)
+    
+    # Look for recursive patterns
+    for i, call in enumerate(call_sequence):
+        if i > 0 and call['to'] == call_sequence[i-1]['to']:
+            if call['input'][:10] == call_sequence[i-1]['input'][:10]:
+                alert({
+                    'severity': 'high',
+                    'title': 'Possible Reentrancy Attack',
+                    'contract': call['to'],
+                    'method': call['input'][:10]
+                })
+```
+
+## 3. SIEM Implementation
+
+### 3.1 Logstash Configuration
+```ruby
+input {
+  http_poller {
+    urls => {
+      eth_blocks => {
+        method => get
+        url => "http://eth-node:8545"
+        headers => {
+          Accept => "application/json"
+        }
+        request_timeout => 60
+        codec => "json"
+        schedule => { every => "5s" }
+      }
+    }
+  }
+}
+
+filter {
+  # Parse transaction receipts
+  if [result] {
+    mutate {
+      add_field => { "@timestamp" => "%{[result].timestamp}" }
+      add_field => { "block_number" => "%{[result].number}" }
+      add_field => { "block_hash" => "%{[result].hash}" }
+    }
+    
+    # Extract transaction details
+    if [result][transactions] {
+      split {
+        field => "[result][transactions]"
+        target => "transaction"
+      }
+    }
+  }
+}
+```
+
+### 3.2 Sigma Rules for Blockchain
+```yaml
+title: Suspicious Contract Creation
+id: 5f2a6dfc-b8bf-4b4a-9a60-23f9e79d7a1c
+status: experimental
+description: Detects contract creation with unusual bytecode patterns
+references:
+  - https://swcregistry.io/docs/SWC-120
+logsource:
+  product: blockchain
+  service: ethereum
+detection:
+  selection:
+    event.type: "transaction"
+    transaction.to: null  # Contract creation
+  condition: selection and 
+    (
+      transaction.input|contains:"60606040" or  # Common init code
+      transaction.input|length > 24576  # Unusually large init code
+    )
+falsepositives:
+  - Legitimate contract deployments
+level: medium
+```
+
+## 4. Anomaly Detection
+
+### 4.1 Gas Price Spikes
+```python
+# Z-score based anomaly detection
+def detect_gas_anomaly(current_gas, window_size=100):
+    # Get historical gas prices (last 100 blocks)
+    history = get_historical_gas_prices(window_size)
+    
+    # Calculate statistics
+    mean = np.mean(history)
+    std = np.std(history)
+    
+    # Calculate z-score
+    z_score = (current_gas - mean) / std if std > 0 else 0
+    
+    # Alert if z-score > 3 (99.7% threshold)
+    if z_score > 3:
+        return True, z_score
+    return False, z_score
+```
+
+### 4.2 Unusual Token Transfers
+```sql
+-- BigQuery SQL for detecting large token transfers
+SELECT 
+  block_timestamp,
+  transaction_hash,
+  from_address,
+  to_address,
+  value / POW(10, 18) as value_eth,
+  token_symbol
+FROM 
+  `bigquery-public-data.crypto_ethereum.token_transfers`
+WHERE 
+  value > 1000000 * POW(10, 18)  # 1M+ tokens
+  AND DATE(block_timestamp) = CURRENT_DATE()
+ORDER BY 
+  value DESC
+LIMIT 100
+```
+
+## 5. Smart Contract Monitoring
+
+### 5.1 Function Call Monitoring
+```python
+# Monitor specific function calls
+def monitor_contract_functions(contract_address, functions_to_monitor):
+    # Get recent transactions
+    txs = get_contract_transactions(contract_address)
+    
+    for tx in txs:
+        # Decode transaction input
+        func_hash = tx['input'][:10]
+        
+        if func_hash in functions_to_monitor:
+            func_name = functions_to_monitor[func_hash]
+            
+            # Check for suspicious parameters
+            if func_name == 'transfer' and tx['value'] > 1000 * 1e18:
+                alert_large_transfer(tx)
+            
+            # Monitor admin functions
+            if func_name in ['upgradeTo', 'changeAdmin']:
+                alert_admin_operation(tx)
+```
+
+### 5.2 Event-Based Alerts
+```solidity
+// Solidity event for suspicious activity
+event SuspiciousActivity(
+    address indexed user,
+    string activity,
+    uint256 amount,
+    bytes data
+);
+
+// Example usage in a contract
+function withdraw(uint256 amount) external {
+    require(balances[msg.sender] >= amount, "Insufficient balance");
+    
+    // Check for suspicious withdrawal pattern
+    if (amount > 1000 * 1e18) {
+        emit SuspiciousActivity(
+            msg.sender,
+            "Large withdrawal",
+            amount,
+            msg.data
+        );
+    }
+    
+    balances[msg.sender] -= amount;
+    payable(msg.sender).transfer(amount);
+}
+```
+
+## 6. Cross-Chain Monitoring
+
+### 6.1 Bridge Activity
+```python
+def monitor_bridge_activity():
+    # Track assets moving between chains
+    bridges = {
+        '0x1234...': 'Ethereum → Polygon',
+        '0x5678...': 'Ethereum → Arbitrum'
+    }
+    
+    for bridge_address, bridge_name in bridges.items():
+        # Get recent bridge transactions
+        txs = get_transactions(bridge_address)
+        
+        for tx in txs:
+            # Check for large transfers
+            if tx['value'] > 1000 * 1e18:
+                alert({
+                    'severity': 'high',
+                    'title': f'Large Bridge Transfer - {bridge_name}',
+                    'value': tx['value'] / 1e18,
+                    'from': tx['from'],
+                    'to': tx['to']
+                })
+```
+
+## 7. Alerting and Response
+
+### 7.1 Severity Classification
+```python
+def classify_alert(event):
+    if event.get('exploit_detected', False):
+        return 'critical'
+    elif event.get('suspicious_behavior', False):
+        return 'high'
+    elif event.get('unusual_activity', False):
+        return 'medium'
+    return 'low'
+```
+
+### 7.2 Automated Response Actions
+```python
+def handle_alert(alert):
+    # Route alert based on severity
+    if alert['severity'] == 'critical':
+        # Immediate action required
+        pause_contract(alert['contract'])
+        notify_security_team(alert)
+        
+    elif alert['severity'] == 'high':
+        # Review required
+        create_incident_ticket(alert)
+        notify_on_call(alert)
+        
+    # Log all alerts
+    log_alert(alert)
+```
+
+## 8. Compliance Monitoring
+
+### 8.1 OFAC Sanctions Screening
+```python
+def check_sanctions(address):
+    # Check against known sanctioned addresses
+    sanctions_list = get_sanctions_list()
+    
+    if address.lower() in sanctions_list:
+        return True, sanctions_list[address.lower()]
+    return False, None
+
+# Usage in transaction monitoring
+for tx in new_transactions:
+    is_sanctioned, reason = check_sanctions(tx['from'])
+    if is_sanctioned:
+        alert({
+            'severity': 'critical',
+            'title': 'Sanctioned Address Detected',
+            'address': tx['from'],
+            'reason': reason,
+            'transaction': tx['hash']
+        })
+```
+
+## 9. Dashboard and Reporting
+
+### 9.1 Grafana Dashboard
+```json
+{
+  "panels": [
+    {
+      "title": "Blockchain Activity",
+      "type": "graph",
+      "datasource": "Blockchain",
+      "targets": [
+        {
+          "expr": "sum(rate(ethereum_transactions_total[5m])) by (status)",
+          "legendFormat": "{{status}}"
+        }
+      ],
+      "alert": {
+        "conditions": [
+          {
+            "evaluator": {
+              "params": [0.5],
+              "type": "gt"
+            },
+            "query": {
+              "params": ["A", "5m", "now"]
+            },
+            "reducer": {
+              "params": [],
+              "type": "avg"
+            },
+            "type": "query"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+
+## 10. Continuous Improvement
+
+### 10.1 Rule Tuning
+```python
+def evaluate_rule_performance(rule_id):
+    # Get alerts from this rule
+    alerts = get_alerts(rule_id=rule_id, days=30)
+    
+    # Calculate precision and recall
+    true_positives = sum(1 for a in alerts if a['true_positive'])
+    false_positives = len(alerts) - true_positives
+    
+    # Get false negatives (missed detections)
+    false_negatives = get_false_negatives(rule_id)
+    
+    # Calculate metrics
+    precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0
+    recall = true_positives / (true_positives + false_negatives) if (true_positives + false_negatives) > 0 else 0
+    
+    # Update rule thresholds if needed
+    if precision < 0.8 or recall < 0.7:
+        tune_rule_thresholds(rule_id, precision, recall)
+```
+
+## Conclusion
+
+Effective blockchain monitoring requires a combination of traditional SIEM techniques and blockchain-specific detection methods. By implementing these rules and continuously refining them based on new threats, organizations can significantly improve their ability to detect and respond to blockchain-based attacks.
+
+## Resources
+- [Ethereum Alarm Clock](https://docs.ethereum-alarm-clock.io/)
+- [OpenZeppelin Defender](https://openzeppelin.com/defender/)
+- [Forta Network](https://forta.org/)

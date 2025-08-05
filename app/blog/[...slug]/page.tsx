@@ -8,6 +8,12 @@ import React, { use } from "react";
 
 type Params = Promise<{ slug: string }>;
 
+export async function generateStaticParams() {
+	return allPosts.map((post) => ({
+		slug: [post._meta.path],
+	}));
+}
+
 export async function generateMetadata(
 	{ params }: { params: Params },
 	parent: ResolvingMetadata,

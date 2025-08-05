@@ -1,0 +1,221 @@
+---
+title: "Secure Oracles for DeFi"
+description: "Reliable data feeds for smart contracts"
+date: "2025-03-21"
+categories: ["Blockchain", "DeFi", "Oracles"]
+author: "Sarwagya"
+---
+
+# Oracle Security Patterns
+
+## 1. Data Aggregation
+
+### 1.1 Medianizer Contract
+```solidity
+contract MedianOracle {
+    struct Report {
+        uint256 timestamp;
+        uint256 price;
+    }
+    
+    mapping(address => Report) public reports;
+    address[] public reporters;
+    
+    function submitPrice(uint256 price) external {
+        reports[msg.sender] = Report(block.timestamp, price);
+        
+        // Add to reporters if new
+        for (uint i = 0; i < reporters.length; i++) {
+            if (reporters[i] == msg.sender) {
+                return;
+            }
+        }
+        reporters.push(msg.sender);
+    }
+    
+    function getMedianPrice() public view returns (uint256) {
+        uint256[] memory prices = new uint256[](reporters.length);
+        uint256 count = 0;
+        
+        // Collect valid reports
+        for (uint i = 0; i < reporters.length; i++) {
+            Report memory r = reports[reporters[i]];
+            if (block.timestamp - r.timestamp < 1 hours) {
+                prices[count++] = r.price;
+            }
+        }
+        
+        // Sort and return median
+        _sort(prices, count);
+        return count % 2 == 0 
+            ? (prices[count/2 - 1] + prices[count/2]) / 2
+            : prices[count/2];
+    }
+}
+```
+
+## 2. Decentralized Oracle Networks
+
+### 2.1 Chainlink Data Feed
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+
+contract PriceConsumer {
+    AggregatorV3Interface internal priceFeed;
+    
+    constructor(address aggregator) {
+        priceFeed = AggregatorV3Interface(aggregator);
+    }
+    
+    function getLatestPrice() public view returns (int) {
+        (
+            uint80 roundID, 
+            int price,
+            uint startedAt,
+            uint timeStamp,
+            uint80 answeredInRound
+        ) = priceFeed.latestRoundData();
+        
+        require(price > 0, "Invalid price");
+        require(timeStamp != 0, "Round not complete");
+        require(answeredInRound >= roundID, "Stale data");
+        
+        return price;
+    }
+}
+```
+
+## 3. Oracle Security Measures
+
+### 3.1 Time-Weighted Average Price (TWAP)
+```solidity
+contract TWAPOracle {
+    struct Observation {
+        uint256 timestamp;
+        uint256 priceCumulative;
+    }
+    
+    Observation[] public observations;
+    
+    function update(uint256 price) external {
+        uint256 timeElapsed = block.timestamp - observations[observations.length-1].timestamp;
+        uint256 priceCumulative = observations[observations.length-1].priceCumulative + 
+                                 (price * timeElapsed);
+        
+        observations.push(Observation({
+            timestamp: block.timestamp,
+            priceCumulative: priceCumulative
+        }));
+    }
+    
+    function consult(uint256 period) public view returns (uint256) {
+        require(observations.length >= 2, "Insufficient data");
+        
+        uint256 timeTarget = block.timestamp - period;
+        uint256 i = observations.length - 1;
+        
+        while (observations[i-1].timestamp > timeTarget) {
+            i--;
+            if (i == 0) break;
+        }
+        
+        uint256 timeElapsed = observations[observations.length-1].timestamp - 
+                             observations[i].timestamp;
+        uint256 priceDelta = observations[observations.length-1].priceCumulative - 
+                            observations[i].priceCumulative;
+        
+        return priceDelta / timeElapsed;
+    }
+}
+```
+
+## 4. Oracle Manipulation Protection
+
+### 4.1 Deviation Checker
+```solidity
+contract DeviationChecker {
+    uint256 public constant MAX_DEVIATION = 5; // 5%
+    
+    function isPriceManipulated(
+        uint256 currentPrice,
+        uint256[] memory oraclePrices
+    ) public pure returns (bool) {
+        uint256 sum;
+        uint256 validCount;
+        
+        // Calculate average
+        for (uint i = 0; i < oraclePrices.length; i++) {
+            if (oraclePrices[i] > 0) {
+                sum += oraclePrices[i];
+                validCount++;
+            }
+        }
+        
+        if (validCount == 0) return true;
+        
+        uint256 average = sum / validCount;
+        uint256 deviation = (currentPrice * 100) / average;
+        
+        return deviation > (100 + MAX_DEVIATION) || 
+               deviation < (100 - MAX_DEVIATION);
+    }
+}
+```
+
+## 5. Implementation
+
+### 5.1 Chainlink Keepers
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@chainlink/contracts/src/v0.8/KeeperCompatible.sol";
+
+contract PriceUpdater is KeeperCompatibleInterface {
+    uint public immutable interval;
+    uint public lastTimeStamp;
+    
+    constructor(uint updateInterval) {
+        interval = updateInterval;
+        lastTimeStamp = block.timestamp;
+    }
+    
+    function checkUpkeep(
+        bytes calldata /* checkData */
+    ) external view override returns (bool upkeepNeeded, bytes memory /* performData */) {
+        upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
+    }
+    
+    function performUpkeep(bytes calldata /* performData */) external override {
+        if ((block.timestamp - lastTimeStamp) > interval) {
+            lastTimeStamp = block.timestamp;
+            // Update price logic here
+        }
+    }
+}
+```
+
+## 6. Best Practices
+
+1. **Multiple Data Sources**
+   - Use 3+ independent oracles
+   - Different data providers
+   - Various update frequencies
+
+2. **Security Measures**
+   - Circuit breakers
+   - Deviation thresholds
+   - Time delays for critical updates
+
+3. **Monitoring**
+   - Price feed health checks
+   - Anomaly detection
+   - Alerting for stale data
+
+## 7. Resources
+- [Chainlink Documentation](https://docs.chain.link/)
+- [TWAP Oracles](https://uniswap.org/whitepaper-v3.pdf)
+- [Price Oracle Security](https://blog.openzeppelin.com/secure-smart-contract-guidelines-price-oracles/)

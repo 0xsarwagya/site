@@ -1,0 +1,161 @@
+---
+title: "Confidential Computing on Blockchain"
+description: "Privacy-preserving computation with TEEs and ZKPs"
+date: "2025-03-24"
+categories: ["Blockchain", "Privacy", "Confidential Computing"]
+author: "Sarwagya"
+---
+
+# Confidential Computing
+
+## 1. Trusted Execution Environments (TEEs)
+
+### 1.1 Intel SGX Enclave
+```cpp
+// Inside enclave
+void ecall_compute_hash(const char* input, size_t len, uint8_t* hash) {
+    sgx_sha256_msg(
+        (const uint8_t*)input,
+        len,
+        (sgx_sha256_hash_t*)hash
+    );
+}
+
+// Untrusted app
+void compute_hash(const std::string& input) {
+    uint8_t hash[32];
+    
+    sgx_enclave_id_t eid = create_enclave("enclave.signed.so");
+    
+    sgx_status_t ret = ecall_compute_hash(
+        eid,
+        input.c_str(),
+        input.length(),
+        hash
+    );
+    
+    if (ret == SGX_SUCCESS) {
+        // Use hash
+    }
+    
+    destroy_enclave(eid);
+}
+```
+
+## 2. Zero-Knowledge Proofs
+
+### 2.1 zk-SNARKs with ZoKrates
+```python
+def main(private field a, private field b) -> (field):
+    field sum = a + b
+    field product = a * b
+    assert(sum * sum - 2 * product == a * a + b * b)
+    return product
+```
+
+## 3. Secure Multi-Party Computation
+
+### 3.1 Secret Sharing
+```python
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+
+def split_secret(secret, n, k):
+    # Generate random shares
+    shares = [os.urandom(32) for _ in range(k-1)]
+    
+    # Last share makes the sum equal to secret
+    last_share = bytes(a ^ b for a, b in zip(
+        secret,
+        reduce(lambda x, y: bytes(_a ^ _b for _a, _b in zip(x, y)), shares)
+    ))
+    shares.append(last_share)
+    
+    return shares
+
+def reconstruct_secret(shares):
+    return reduce(
+        lambda x, y: bytes(_a ^ _b for _a, _b in zip(x, y)),
+        shares
+    )
+```
+
+## 4. Homomorphic Encryption
+
+### 4.1 Paillier Cryptosystem
+```python
+from phe import paillier
+
+def homomorphic_addition():
+    # Generate keys
+    pub_key, priv_key = paillier.generate_paillier_keypair()
+    
+    # Encrypt values
+    a, b = 5, 10
+    enc_a = pub_key.encrypt(a)
+    enc_b = pub_key.encrypt(b)
+    
+    # Homomorphic addition
+    enc_sum = enc_a + enc_b
+    
+    # Decrypt result
+    assert priv_key.decrypt(enc_sum) == a + b
+```
+
+## 5. Implementation
+
+### 5.1 Oasis SDK with TEE
+```rust
+// Confidential smart contract
+#[oasis_std::service]
+pub trait Confidential {
+    fn set_secret(&mut self, secret: Vec<u8>) -> Result<()>;
+    fn compute_hash(&self) -> Result<Vec<u8>>;
+}
+
+pub struct Contract {
+    secret: Option<Vec<u8>>,
+}
+
+impl Contract {
+    pub fn new() -> Self {
+        Self { secret: None }
+    }
+}
+
+impl Confidential for Contract {
+    fn set_secret(&mut self, secret: Vec<u8>) -> Result<()> {
+        self.secret = Some(secret);
+        Ok(())
+    }
+    
+    fn compute_hash(&self) -> Result<Vec<u8>> {
+        let secret = self.secret.as_ref().ok_or("No secret set")?;
+        let mut hasher = Sha256::new();
+        hasher.update(secret);
+        Ok(hasher.finalize().to_vec())
+    }
+}
+```
+
+## 6. Best Practices
+
+1. **TEE Security**
+   - Remote attestation
+   - Secure channel establishment
+   - Enclave identity verification
+
+2. **ZK Circuit Design**
+   - Minimize circuit size
+   - Optimize constraints
+   - Audit for soundness
+
+3. **MPC Implementation**
+   - Secure key generation
+   - Malicious party tolerance
+   - Performance optimization
+
+## 7. Resources
+- [Confidential Computing Consortium](https://confidentialcomputing.io/)
+- [Oasis Network](https://docs.oasis.io/)
+- [ZoKrates Documentation](https://zokrates.github.io/)

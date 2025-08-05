@@ -1,0 +1,403 @@
+---
+title: "Secure Multiparty Computation: Real-World Implementations"
+description: "A technical deep dive into MPC protocols with production-ready code examples for privacy-preserving applications."
+date: "2025-02-07"
+categories: ["Cryptography", "MPC", "Privacy"]
+author: "Sarwagya"
+---
+
+# Secure Multiparty Computation: Real-World Implementations
+
+> How to build privacy-preserving applications using modern MPC frameworks.
+
+## 1. MPC Fundamentals
+
+### 1.1 Core Concepts
+- **Garbled Circuits**: Two-party computation using encrypted truth tables
+- **Secret Sharing**: Data split into shares requiring threshold reconstruction
+- **Oblivious Transfer**: Sender doesn't learn which item was received
+- **Homomorphic Encryption**: Computation on encrypted data
+
+### 1.2 Security Models
+```
+Semi-Honest (Honest-But-Curious)
+├── Parties follow protocol but may analyze transcripts
+└── Weaker but more efficient
+
+Malicious
+├── Parties may deviate from protocol
+└── Requires additional zero-knowledge proofs
+```
+
+## 2. Implementation with MP-SPDZ
+
+### 2.1 Setup
+```bash
+# Install dependencies
+sudo apt-get install -y automake build-essential cmake git libboost-dev \
+    libboost-thread-dev libntl-dev libsodium-dev libssl-dev libtool m4 \
+    texinfo yasm libgmp3-dev
+
+# Clone and build MP-SPDZ
+git clone https://github.com/data61/MP-SPDZ.git
+cd MP-SPDZ
+make tldr
+make -j 8 mp_rsa_keygen
+```
+
+### 2.2 Millionaires' Problem
+```python
+# mpc/millionaires.mpc
+from util import if_else
+
+# Input from parties
+a = sfix.get_input_from(0)  # Party 0's wealth
+b = sfix.get_input_from(1)  # Party 1's wealth
+
+# Secure comparison
+result = a > b
+
+# Output result to both parties
+print_ln('Party 0 is richer: %s', result.reveal())
+```
+
+### 2.3 Running the Protocol
+```bash
+# Compile the program
+./compile.py -B 32 millionaires
+
+# Run with two parties (semi-honest)
+./mascot-party.x -N 2 -I -p 0 millionaires &
+./mascot-party.x -N 2 -I -p 1 millionfers 1000000  # Party 1: $1,000,000
+```
+
+## 3. Private Set Intersection (PSI)
+
+### 3.1 Protocol Design
+```mermaid
+graph LR
+    A[Party A: Set X] -->|Encrypted Hashes| B(MPC Protocol)
+    C[Party B: Set Y] -->|Encrypted Hashes| B
+    B -->|X ∩ Y| A
+    B -->|X ∩ Y| C
+```
+
+### 3.2 Implementation with OpenMined PSI
+```python
+from psi.protocol import PsiProtocol
+from psi.encryption import ECEncryptor
+
+# Initialize with curve parameters
+curve = 'secp256k1'
+encryptor = ECEncryptor(curve)
+
+# Sample data
+alice_items = ["alice@example.com", "bob@example.com"]
+bob_items = ["bob@example.com", "charlie@example.com"]
+
+# Create protocol instances
+alice = PsiProtocol(encryptor, "alice")
+bob = PsiProtocol(encryptor, "bob")
+
+# Generate keys and process items
+alice.setup()
+bob.setup()
+
+alice_hashes = alice.encrypt(alice_items)
+bob_hashes = bob.encrypt(bob_items)
+
+# Exchange hashes and compute intersection
+alice_intersection = alice.compute_intersection(bob_hashes)
+bob_intersection = bob.compute_intersection(alice_hashes)
+
+assert alice_intersection == bob_intersection == {"bob@example.com"}
+```
+
+## 4. Threshold Signature Scheme
+
+### 4.1 Key Generation
+```python
+# threshold_sig/keygen.py
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.primitives import serialization
+from typing import List, Tuple
+
+class ThresholdKeyGenerator:
+    def __init__(self, threshold: int, total_shares: int):
+        self.threshold = threshold
+        self.total_shares = total_shares
+        self.curve = ec.SECP256K1()
+        
+    def generate_shares(self) -> Tuple[bytes, List[bytes]]:
+        # Generate private key
+        private_key = ec.generate_private_key(self.curve)
+        
+        # Get public key in compressed format
+        public_key = private_key.public_key().public_bytes(
+            encoding=serialization.Encoding.X962,
+            format=serialization.PublicFormat.CompressedPoint
+        )
+        
+        # Split private key using Shamir's Secret Sharing
+        secret = private_key.private_numbers().private_value.to_bytes(32, 'big')
+        shares = self._split_secret(secret)
+        
+        return public_key, shares
+    
+    def _split_secret(self, secret: bytes) -> List[bytes]:
+        # Implement Shamir's Secret Sharing here
+        # (omitted for brevity)
+        pass
+```
+
+### 4.2 Signature Generation
+```python
+# threshold_sig/sign.py
+from dataclasses import dataclass
+from typing import List
+
+@dataclass
+class PartialSignature:
+    r: int
+    s: int
+    recovery_id: int
+    
+class ThresholdSigner:
+    def __init__(self, share: bytes, public_key: bytes, threshold: int):
+        self.share = share
+        self.public_key = public_key
+        self.threshold = threshold
+        
+    def sign_partial(self, message: bytes) -> PartialSignature:
+        # Implement threshold ECDSA signing
+        # (omitted for brevity)
+        pass
+    
+    @classmethod
+    def combine_signatures(cls, signatures: List[PartialSignature]) -> bytes:
+        # Combine partial signatures into final signature
+        # (omitted for brevity)
+        pass
+```
+
+## 5. Privacy-Preserving Machine Learning
+
+### 5.1 Secure Model Training
+```python
+# mpc/linear_regression.mpc
+from util import mpc_math
+
+class SecureLinearRegression:
+    def __init__(self, n_features, learning_rate=0.01):
+        self.weights = [sfloat(0) for _ in range(n_features)]
+        self.bias = sfloat(0)
+        self.lr = sfloat(learning_rate)
+    
+    def predict(self, X):
+        # X is a list of secret-shared feature vectors
+        return [self._predict_single(x) for x in X]
+    
+    def _predict_single(self, x):
+        # Compute dot product + bias
+        pred = self.bias
+        for i in range(len(x)):
+            pred += x[i] * self.weights[i]
+        return pred
+    
+    def fit(self, X, y, n_epochs=10):
+        n_samples = len(X)
+        
+        for _ in range(n_epochs):
+            for i in range(n_samples):
+                # Forward pass
+                pred = self._predict_single(X[i])
+                
+                # Compute gradients
+                error = pred - y[i]
+                
+                # Update weights
+                for j in range(len(self.weights)):
+                    grad = X[i][j] * error
+                    self.weights[j] -= self.lr * grad / n_samples
+                
+                # Update bias
+                self.bias -= self.lr * error / n_samples
+```
+
+## 6. Performance Optimization
+
+### 6.1 Circuit Optimization
+```python
+# Optimized secure comparison (less than)
+def secure_less_than(a, b, bit_length=32):
+    # XOR of a and b
+    diff = a ^ b
+    
+    # Get the most significant bit (MSB) of the difference
+    msb = 0
+    for i in range(bit_length - 1, 0, -1):
+        # Extract i-th bit
+        bit = (diff >> i) & 1
+        # OR with previous bits
+        msb |= bit
+    
+    # If a < b, then (a - b) is negative (MSB = 1)
+    return msb
+```
+
+### 6.2 Batch Processing
+```python
+def batch_process(inputs, batch_size=32):
+    results = []
+    for i in range(0, len(inputs), batch_size):
+        batch = inputs[i:i + batch_size]
+        # Process batch in parallel
+        batch_results = [process(x) for x in batch]
+        results.extend(batch_results)
+    return results
+```
+
+## 7. Integration with Blockchain
+
+### 7.1 MPC Wallet
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract MPCWallet {
+    address[] public owners;
+    uint public threshold;
+    
+    struct Transaction {
+        address to;
+        uint value;
+        bytes data;
+        bool executed;
+        uint confirmations;
+        mapping(address => bool) isConfirmed;
+    }
+    
+    Transaction[] public transactions;
+    
+    event TransactionProposed(uint txId, address proposer);
+    event TransactionConfirmed(uint txId, address owner);
+    event TransactionExecuted(uint txId, bool success);
+    
+    constructor(address[] memory _owners, uint _threshold) {
+        require(_owners.length > 0, "No owners provided");
+        require(_threshold > 0 && _threshold <= _owners.length, "Invalid threshold");
+        
+        owners = _owners;
+        threshold = _threshold;
+    }
+    
+    function proposeTransaction(
+        address _to,
+        uint _value,
+        bytes calldata _data
+    ) external onlyOwner returns (uint) {
+        uint txId = transactions.length;
+        Transaction storage transaction = transactions.push();
+        transaction.to = _to;
+        transaction.value = _value;
+        transaction.data = _data;
+        transaction.executed = false;
+        transaction.confirmations = 0;
+        
+        // Auto-confirm by the proposer
+        confirmTransaction(txId);
+        
+        emit TransactionProposed(txId, msg.sender);
+        return txId;
+    }
+    
+    function confirmTransaction(uint _txId) public onlyOwner {
+        Transaction storage transaction = transactions[_txId];
+        require(!transaction.isConfirmed[msg.sender], "Already confirmed");
+        
+        transaction.isConfirmed[msg.sender] = true;
+        transaction.confirmations++;
+        
+        emit TransactionConfirmed(_txId, msg.sender);
+        
+        // Execute if threshold reached
+        if (transaction.confirmations >= threshold && !transaction.executed) {
+            executeTransaction(_txId);
+        }
+    }
+    
+    function executeTransaction(uint _txId) internal {
+        Transaction storage transaction = transactions[_txId];
+        require(!transaction.executed, "Already executed");
+        
+        (bool success, ) = transaction.to.call{value: transaction.value}(
+            transaction.data
+        );
+        
+        transaction.executed = success;
+        emit TransactionExecuted(_txId, success);
+    }
+    
+    modifier onlyOwner() {
+        bool isOwner = false;
+        for (uint i = 0; i < owners.length; i++) {
+            if (owners[i] == msg.sender) {
+                isOwner = true;
+                break;
+            }
+        }
+        require(isOwner, "Not an owner");
+        _;
+    }
+}
+```
+
+## 8. Performance Considerations
+
+### 8.1 Communication Rounds
+```
+Protocol            | Rounds  | Bandwidth (MB)  | Computation
+--------------------|---------|-----------------|-------------
+GMW (Semi-Honest)  | O(d)    | O(n·|C|)        | Low
+SPDZ (Malicious)    | O(1)    | O(n·|C|)        | High
+BMR (Constant)      | O(1)    | O(n²·|C|)       | Medium
+```
+
+### 8.2 Optimization Techniques
+- **Preprocessing**: Generate multiplication triples offline
+- **Vectorization**: Process multiple operations in parallel
+- **Circuit Minimization**: Use arithmetic circuits efficiently
+- **Parallelization**: Distribute computation across multiple cores
+
+## 9. Security Considerations
+
+### 9.1 Threat Models
+- **Semi-Honest**: Parties follow protocol but may try to learn additional information
+- **Covert**: Cheating is detected with some probability
+- **Malicious**: Full protection against arbitrary deviations
+
+### 9.2 Side-Channel Protection
+- Constant-time implementations
+- Data-independent memory access patterns
+- Protection against timing attacks
+
+## 10. Real-World Deployments
+
+### 10.1 Financial Applications
+- Private auctions
+- Dark pool trading
+- Fraud detection
+
+### 10.2 Healthcare
+- Privacy-preserving medical research
+- Genomic data analysis
+- Cross-institution patient matching
+
+## Conclusion
+
+Secure Multiparty Computation enables powerful privacy-preserving applications across various domains. By leveraging modern frameworks and optimization techniques, developers can build efficient and secure MPC solutions.
+
+## Further Reading
+- [MP-SPDZ Documentation](https://mp-spdz.readthedocs.io/)
+- [Practical Secure Aggregation for Privacy-Preserving ML](https://eprint.iacr.org/2017/281)
+- [Obliv-C: A Language for Secure Computation](https://oblivc.org/)

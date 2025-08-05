@@ -13,7 +13,8 @@
 			".vscode",
 			".next",
 			"*.config.ts",
-			"*.json"
+			"*.json",
+			"hooks/use-toast.ts"
 		]
 	},
 	"formatter": {

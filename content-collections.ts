@@ -1,6 +1,9 @@
 import { defineCollection, defineConfig } from "@content-collections/core";
 import { compileMDX } from "@content-collections/mdx";
 import { readingTime } from "reading-time-estimator";
+import remarkFrontmatter from "remark-frontmatter";
+import remarkMdxFrontmatter from "remark-mdx-frontmatter";
+import remarkRehype from "remark-rehype";
 
 const posts = defineCollection({
 	name: "posts",
@@ -12,7 +15,9 @@ const posts = defineCollection({
 		date: z.string(),
 	}),
 	transform: async (document, context) => {
-		const body = await compileMDX(context, document);
+		const body = await compileMDX(context, document, {
+			remarkPlugins: [remarkFrontmatter, remarkMdxFrontmatter, remarkRehype],
+		});
 		const options: Intl.DateTimeFormatOptions = {
 			year: "numeric",
 			month: "short",

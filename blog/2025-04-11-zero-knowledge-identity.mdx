@@ -1,0 +1,126 @@
+---
+title: "Zero-Knowledge Identity Solutions"
+description: "Privacy-preserving identity verification"
+date: "2025-04-11"
+categories: ["Blockchain", "Privacy", "Identity"]
+author: "Sarwagya"
+---
+
+# ZK Identity Verification
+
+## Privacy-Preserving Identity
+
+Zero-knowledge proofs enable identity verification without revealing sensitive information. Key concepts include:
+
+1. **Selective Disclosure**: Share only necessary attributes
+2. **Minimal Disclosure**: Prove statements without revealing underlying data
+3. **Non-correlation**: Prevent tracking across different services
+
+## Implementation with ZK-SNARKs
+
+### 1. Age Verification
+
+```circom
+// Prove age >= 18 without revealing exact age
+template AgeProof() {
+    signal private input birthYear;
+    signal private input currentYear;
+    signal output isAdult;
+    
+    // Public input: current year - 18
+    signal input minBirthYear;
+    
+    // Private computation
+    signal age = currentYear - birthYear;
+    
+    // Constraint: birthYear <= (currentYear - 18)
+    minBirthYear === currentYear - 18;
+    birthYear <= minBirthYear;
+    
+    // Output verification
+    isAdult <-- 1;
+}
+```
+
+### 2. Credential Verification
+
+```typescript
+// Using @iden3/circomlib
+const { generateProof, verifyProof } = require('@iden3/circomlib');
+
+// User credentials
+const user = {
+    name: "Alice",
+    age: 25,
+    country: "US",
+    ssn: "***-**-****" // Never revealed
+};
+
+// Generate proof of being over 21 in the US
+const { proof, publicSignals } = await generateProof({
+    circuit: 'ageCountryCheck',
+    inputs: {
+        age: user.age,
+        country: hash(user.country),
+        currentYear: 2025,
+        minAge: 21
+    }
+});
+
+// Verification
+const isValid = await verifyProof({
+    circuit: 'ageCountryCheck',
+    proof,
+    publicSignals: [
+        hash(user.country), // Public: country hash
+        2025 - 21,         // Public: min birth year
+    ]
+});
+```
+
+## Use Cases
+
+1. **KYC/AML Compliance**
+   - Verify identity without storing PII
+   - Comply with regulations while preserving privacy
+
+2. **Decentralized Identity**
+   - Self-sovereign identity solutions
+   - Portable credentials across platforms
+
+3. **Access Control**
+   - Gated content/services
+   - Age-restricted purchases
+
+## Security Considerations
+
+1. **Trusted Setup**
+   - Secure parameter generation
+   - Multi-party computation ceremonies
+
+2. **Circuit Security**
+   - Formal verification
+   - Audit by security experts
+
+3. **Privacy Leaks**
+   - Metadata analysis
+   - Correlation attacks
+
+## Implementation Steps
+
+1. **Credential Issuance**
+   - Trusted issuer signs credentials
+   - Store credentials in user's wallet
+
+2. **Proof Generation**
+   - User generates ZK proof
+   - Submit proof to verifier
+
+3. **Verification**
+   - Verify proof on-chain/off-chain
+   - Grant access if valid
+
+## Resources
+- [Circom Documentation](https://docs.circom.io/)
+- [Semaphore](https://semaphore.appliedzkp.org/)
+- [zkDID](https://github.com/zkp-ld/zkdid-core)

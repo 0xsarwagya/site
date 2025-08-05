@@ -1,0 +1,126 @@
+---
+title: "MEV Protection Strategies"
+description: "Mitigating Maximal Extractable Value risks"
+date: "2025-04-17"
+categories: ["Blockchain", "DeFi", "Security"]
+author: "Sarwagya"
+---
+
+# MEV Protection Mechanisms
+
+## Understanding MEV Risks
+
+Maximal Extractable Value (MEV) represents profits that can be extracted through reordering, inserting, or censoring transactions. Common MEV attacks include:
+
+1. **Frontrunning**: Seeing pending transactions and submitting a similar one with higher gas
+2. **Backrunning**: Executing transactions immediately after a target transaction
+3. **Sandwich Attacks**: Placing orders before and after a large trade
+
+## Protection Techniques
+
+### 1. Private Transactions
+
+```typescript
+// Using Flashbots Protect
+import { FlashbotsBundleProvider } from '@flashbots/ethers-provider-bundle';
+
+const flashbotsProvider = await FlashbotsBundleProvider.create(
+  provider,
+  authSigner,
+  'https://relay.flashbots.net'
+);
+
+// Submit private transaction
+const signedTx = await wallet.signTransaction({
+  to: '0x...',
+  value: ethers.utils.parseEther('1.0'),
+  gasPrice: 0, // 0 gas for Flashbots
+  gasLimit: 21000,
+});
+
+const bundle = [{
+  signedTransaction: signedTx
+}];
+
+await flashbotsProvider.sendBundle(bundle, targetBlockNumber + 1);
+```
+
+### 2. Slippage Protection
+
+```solidity
+// Using Uniswap V3 with slippage protection
+function swapWithSlippage(
+    address tokenIn,
+    address tokenOut,
+    uint256 amountIn,
+    uint256 minAmountOut,
+    uint24 fee
+) external {
+    IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
+    IERC20(tokenIn).approve(ROUTER, amountIn);
+    
+    ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+        tokenIn: tokenIn,
+        tokenOut: tokenOut,
+        fee: fee,
+        recipient: msg.sender,
+        deadline: block.timestamp,
+        amountIn: amountIn,
+        amountOutMinimum: minAmountOut,
+        sqrtPriceLimitX96: 0
+    });
+    
+    ISwapRouter(ROUTER).exactInputSingle(params);
+}
+```
+
+## MEV-Resistant Designs
+
+1. **Batch Auctions**
+   - Execute trades at uniform clearing price
+   - Prevents frontrunning
+   - Reduces price impact
+
+2. **Commit-Reveal Schemes**
+   - Hide transaction details initially
+   - Reveal in later block
+   - Prevents frontrunning
+
+3. **Fair Ordering**
+   - Use VRF for transaction ordering
+   - Prevent MEV extraction
+   - Ensure fairness
+
+## Best Practices
+
+1. **For Traders**
+   - Use Flashbots for MEV protection
+   - Set conservative slippage
+   - Monitor gas prices
+
+2. **For Developers**
+   - Implement MEV-resistant designs
+   - Use private RPC endpoints
+   - Consider batch processing
+
+3. **For Validators**
+   - Run MEV-boost
+   - Monitor for malicious bundles
+   - Follow ethical practices
+
+## Monitoring Tools
+
+1. **MEV-Explore**
+   - Track MEV opportunities
+   - Monitor sandwich attacks
+   - Analyze transaction flows
+
+2. **EigenPhi**
+   - MEV dashboard
+   - Profit analysis
+   - Attack detection
+
+## Resources
+- [Flashbots Docs](https://docs.flashbots.net/)
+- [MEV-Explore](https://explore.flashbots.net/)
+- [EigenPhi](https://eigenphi.io/)

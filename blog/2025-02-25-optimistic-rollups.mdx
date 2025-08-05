@@ -1,0 +1,104 @@
+---
+title: "Optimistic Rollups: A Technical Guide"
+description: "Deep dive into Optimistic Rollup implementations"
+date: "2025-02-25"
+categories: ["Blockchain", "Scaling", "Layer 2"]
+author: "Sarwagya"
+---
+
+# Optimistic Rollups Explained
+
+## 1. Core Architecture
+
+### 1.1 State Commitments
+```solidity
+contract Rollup {
+    struct StateUpdate {
+        bytes32 stateRoot;
+        uint256 batchIndex;
+        bytes32 previousStateRoot;
+    }
+    
+    mapping(uint256 => StateUpdate) public stateUpdates;
+    uint256 public challengePeriod = 7 days;
+    
+    function submitStateUpdate(StateUpdate calldata update) external {
+        require(update.batchIndex == stateUpdates.length, "Invalid index");
+        stateUpdates[update.batchIndex] = update;
+    }
+}
+```
+
+## 2. Fraud Proofs
+
+### 2.1 Interactive Dispute Game
+```solidity
+contract DisputeGame {
+    struct Dispute {
+        address challenger;
+        uint256 stateIndex;
+        bytes32 claim;
+        bool resolved;
+    }
+    
+    function challengeState(
+        uint256 stateIndex,
+        bytes32 invalidStateTransition
+    ) external {
+        // Start dispute game
+        // Require bond
+        // Start timer
+    }
+}
+```
+
+## 3. Data Availability
+
+### 3.1 Data Availability Committee
+- Off-chain data storage
+- Data attestations
+- Slashing conditions
+
+## 4. Withdrawals
+
+### 4.1 Challenge Period
+- 7-day wait time
+- Fast exits with liquidity providers
+- Emergency exits
+
+## 5. Performance
+
+### 5.1 Throughput
+- 2,000+ TPS
+- 10-100x cost reduction
+- Sub-second confirmations
+
+## 6. Security Model
+
+### 6.1 Economic Security
+- Bond requirements
+- Slashing conditions
+- Withdrawal delays
+
+## 7. Implementation
+
+### 7.1 Local Node Setup
+```bash
+# Clone Optimism repository
+git clone https://github.com/ethereum-optimism/optimism.git
+cd optimism
+
+# Install dependencies
+yarn
+
+# Build the monorepo
+yarn build
+
+# Start local devnet
+make devnet-up
+```
+
+## 8. Resources
+- [Optimism Documentation](https://community.optimism.io/)
+- [Arbitrum Developer Docs](https://developer.offchainlabs.com/)
+- [EIP-4844](https://eips.ethereum.org/EIPS/eip-4844)

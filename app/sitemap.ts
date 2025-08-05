@@ -4,35 +4,35 @@ import type { MetadataRoute } from "next";
 export default function sitemap(): MetadataRoute.Sitemap {
 	const fixedRoutes = [
 		{
-			url: "https://www.0xsarwagya.codes",
+			url: "https://sarwagya.is-a.dev",
 			lastModified: new Date(),
 		},
 		{
-			url: "https://www.0xsarwagya.codes/work",
+			url: "https://sarwagya.is-a.dev/work",
 			lastModified: new Date(),
 		},
 		{
-			url: "https://www.0xsarwagya.codes/projects",
+			url: "https://sarwagya.is-a.dev/projects",
 			lastModified: new Date(),
 			changeFrequency: "always",
 		},
 		{
-			url: "https://www.0xsarwagya.codes/blog",
+			url: "https://sarwagya.is-a.dev/blog",
 			lastModified: new Date(),
 		},
 		{
-			url: "https://www.0xsarwagya.codes/guest-book",
+			url: "https://sarwagya.is-a.dev/guest-book",
 			lastModified: new Date(),
 		},
 		{
-			url: "https://www.0xsarwagya.codes/resume.pdf",
+			url: "https://sarwagya.is-a.dev/resume.pdf",
 			lastModified: new Date(),
 		},
 	];
 
 	const blogRoutes = allPosts.map((post) => {
 		return {
-			url: `https://www.0xsarwagya.codes/blog/${post._meta.path}`,
+			url: `https://sarwagya.is-a.dev/blog/${post._meta.path}`,
 			lastModified: new Date(),
 		};
 	});

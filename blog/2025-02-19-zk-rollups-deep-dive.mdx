@@ -1,0 +1,102 @@
+---
+title: "ZK-Rollups: Technical Deep Dive"
+description: "Understanding zero-knowledge rollup implementations"
+date: "2025-02-19"
+categories: ["Blockchain", "Scaling", "ZKPs"]
+author: "Sarwagya"
+---
+
+# ZK-Rollups Explained
+
+## 1. Core Components
+
+### 1.1 Circuit Design
+```rust
+#[derive(Clone, Debug)]
+struct ZkRollupCircuit {
+    // Public inputs
+    old_root: Root,
+    new_root: Root,
+    
+    // Private inputs
+    transactions: Vec<Transaction>,
+    merkle_proofs: Vec<MerkleProof>
+}
+
+// Constraints ensure valid state transitions
+impl ConstraintSynthesizer<F> for ZkRollupCircuit {
+    fn generate_constraints(self, cs: ConstraintSystem<F>) {
+        // Verify each transaction
+        // Update state root
+    }
+}
+```
+
+### 1.2 On-Chain Verifier
+```solidity
+contract Verifier {
+    function verifyProof(
+        uint[2] memory a,
+        uint[2][2] memory b,
+        uint[2] memory c,
+        uint[2] memory input
+    ) public view returns (bool) {
+        // Verify zk-SNARK proof
+    }
+}
+```
+
+## 2. Data Availability
+
+### 2.1 On-Chain Data
+- Transaction data in calldata
+- Compressed batches
+- Ethereum as data availability layer
+
+### 2.2 Validity Proofs
+- zk-SNARKs/STARKs
+- Recursive proofs
+- Aggregated verification
+
+## 3. Performance
+
+### 3.1 Throughput
+- 2,000+ TPS (vs 15 ETH base)
+- Sub-second finality
+- Batch compression
+
+### 3.2 Costs
+- ~$0.01 per transaction
+- Fixed verification cost
+- Data compression savings
+
+## 4. Security Model
+
+### 4.1 Trust Assumptions
+- Cryptographic security
+- No need for fraud proofs
+- Data availability checks
+
+### 4.2 Withdrawals
+- 7-day challenge period
+- Mass exit mechanism
+- Emergency shutdown
+
+## 5. Implementation
+
+### 5.1 Prover Setup
+```bash
+# Install dependencies
+cargo install zkutil
+
+# Generate trusted setup
+zkutil setup -c circuit.json
+
+# Generate proof
+zkutil prove -c circuit.json input.json proof.json
+```
+
+## 6. Resources
+- [zkSync Documentation](https://docs.zksync.io/)
+- [StarkWare](https://starkware.co/)
+- [Scroll Tech](https://scroll.io/)

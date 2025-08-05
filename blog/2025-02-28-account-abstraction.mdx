@@ -1,0 +1,119 @@
+---
+title: "Account Abstraction: The Future of Wallets"
+description: "EIP-4337 and smart contract wallets"
+date: "2025-02-28"
+categories: ["Blockchain", "Wallets", "Ethereum"]
+author: "Sarwagya"
+---
+
+# Account Abstraction Explained
+
+## 1. Core Concepts
+
+### 1.1 UserOperation
+```solidity
+struct UserOperation {
+    address sender;
+    uint256 nonce;
+    bytes initCode;
+    bytes callData;
+    uint256 callGasLimit;
+    uint256 verificationGasLimit;
+    uint256 preVerificationGas;
+    uint256 maxFeePerGas;
+    uint256 maxPriorityFeePerGas;
+    bytes paymasterAndData;
+    bytes signature;
+}
+```
+
+## 2. Smart Contract Wallets
+
+### 2.1 Minimal Implementation
+```solidity
+contract SmartWallet {
+    address public owner;
+    uint256 public nonce;
+    
+    function execute(
+        address dest,
+        uint256 value,
+        bytes calldata data
+    ) external {
+        require(msg.sender == owner, "Not owner");
+        (bool success, ) = dest.call{value: value}(data);
+        require(success, "Call failed");
+    }
+    
+    function validateUserOp(
+        UserOperation calldata userOp,
+        bytes32 userOpHash,
+        uint256 missingWalletFunds
+    ) external returns (uint256 validationData) {
+        // Verify signature
+        // Pay for gas
+        // Return validation result
+    }
+}
+```
+
+## 3. Paymasters
+
+### 3.1 Gas Sponsorship
+```solidity
+contract Paymaster {
+    function validatePaymasterUserOp(
+        UserOperation calldata userOp,
+        bytes32 userOpHash,
+        uint256 maxCost
+    ) external returns (bytes memory context, uint256 validationData) {
+        // Verify sponsorship conditions
+        // Deduct from deposit
+    }
+}
+```
+
+## 4. Bundlers
+
+### 4.1 Operation Flow
+1. Receive UserOperations from clients
+2. Simulate validation
+3. Bundle into single transaction
+4. Submit to EntryPoint
+
+## 5. EntryPoint
+
+### 5.1 Core Functions
+- `handleOps()` - Process batch of operations
+- `simulateValidation()` - Dry run validation
+- `getSenderAddress()` - Deploy counterfactual wallet
+
+## 6. Security Considerations
+
+### 6.1 Common Vulnerabilities
+- Reentrancy in validation
+- Gas griefing
+- Signature replay
+- Frontrunning
+
+## 7. Implementation
+
+### 7.1 Setup with ethers.js
+```javascript
+import { Wallet, providers } from 'ethers';
+import { SimpleAccountFactory__factory } from '@account-abstraction/contracts';
+
+const provider = new providers.JsonRpcProvider(RPC_URL);
+const owner = new Wallet(PRIVATE_KEY, provider);
+
+// Deploy wallet factory
+const factory = await new SimpleAccountFactory__factory(owner).deploy(ENTRYPOINT_ADDRESS);
+
+// Get wallet address
+const walletAddress = await factory.getAddress(owner.address, 0);
+```
+
+## 8. Resources
+- [EIP-4337](https://eips.ethereum.org/EIPS/eip-4337)
+- [Account Abstraction SDK](https://github.com/eth-infinitism/account-abstraction)
+- [Stackup](https://www.stackup.sh/)

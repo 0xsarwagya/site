@@ -1,0 +1,172 @@
+---
+title: "Secure Multi-Party Wallets"
+description: "Threshold signatures and MPC wallets"
+date: "2025-03-27"
+categories: ["Blockchain", "Security", "Wallets"]
+author: "Sarwagya"
+---
+
+# Multi-Party Computation Wallets
+
+## 1. Threshold Signatures
+
+### 1.1 ECDSA TSS (t-of-n)
+```typescript
+import { Ecdsa, Point, Curve } from '@bitgo/sdk-lib-mpc';
+
+// Key generation
+async function generateKeyShares(threshold: number, total: number) {
+  const keyShare = await Ecdsa.keyShare(1, threshold, total);
+  
+  // Exchange shares between participants
+  const pubKey = keyShare.getPublicKey();
+  const keyCombined = Ecdsa.keyCombine(keyShare, otherShares);
+  
+  return {
+    keyShare,
+    commonKey: keyCombined.getPublicKey()
+  };
+}
+
+// Signing
+async function signTransaction(keyShare: Ecdsa.KeyShare, message: string) {
+  const signing = await Ecdsa.signStep1(message, keyShare);
+  
+  // Exchange signing commitments
+  const signature = await Ecdsa.signStep2(
+    message,
+    keyShare,
+    signing,
+    otherSigningShares
+  );
+  
+  return signature;
+}
+```
+
+## 2. Smart Contract Wallets
+
+### 2.1 Gnosis Safe
+```solidity
+// SPDX-License-Identifier: LGPL-3.0-only
+pragma solidity ^0.8.0;
+
+contract GnosisSafe {
+    mapping(address => bool) public isOwner;
+    uint256 public threshold;
+    
+    function execTransaction(
+        address to,
+        uint256 value,
+        bytes calldata data,
+        bytes[] calldata signatures
+    ) external {
+        require(signatures.length >= threshold, "Not enough signatures");
+        
+        bytes32 txHash = getTransactionHash(to, value, data);
+        address lastOwner = address(0);
+        
+        for (uint256 i = 0; i < threshold; i++) {
+            address recovered = recover(txHash, signatures[i]);
+            require(isOwner[recovered], "Not an owner");
+            require(recovered > lastOwner, "Signatures out of order");
+            lastOwner = recovered;
+        }
+        
+        (bool success, ) = to.call{value: value}(data);
+        require(success, "Call failed");
+    }
+}
+```
+
+## 3. MPC Wallet Architecture
+
+### 3.1 Key Generation
+1. Each party generates secret share
+2. Exchange nonces and commitments
+3. Compute public key
+4. Verify key shares
+
+### 3.2 Signature Flow
+1. Initiate signing session
+2. Generate nonces locally
+3. Exchange nonce commitments
+4. Reveal nonces
+5. Generate partial signatures
+6. Combine signatures
+
+## 4. Security Considerations
+
+### 4.1 Key Refresh
+```typescript
+async function refreshKey(keyShare: Ecdsa.KeyShare) {
+  const refresh = await Ecdsa.refreshStep1(keyShare);
+  
+  // Exchange refresh shares
+  const newKeyShare = await Ecdsa.refreshStep2(
+    keyShare,
+    refresh,
+    otherRefreshShares
+  );
+  
+  return newKeyShare;
+}
+```
+
+## 5. Implementation
+
+### 5.1 Web3Auth Integration
+```javascript
+import { Web3Auth } from '@web3auth/modal';
+import { OpenloginAdapter } from '@web3auth/openlogin-adapter';
+
+const web3auth = new Web3Auth({
+  clientId: 'YOUR_CLIENT_ID',
+  chainConfig: {
+    chainNamespace: 'eip155',
+    chainId: '0x1',
+  },
+  web3AuthNetwork: 'testnet',
+});
+
+const openloginAdapter = new OpenloginAdapter({
+  adapterSettings: {
+    uxMode: 'popup',
+    loginConfig: {
+      google: {
+        verifier: 'google-testnet',
+        typeOfLogin: 'google',
+        clientId: 'GOOGLE_CLIENT_ID',
+      },
+    },
+  },
+});
+
+web3auth.configureAdapter(openloginAdapter);
+
+// Login
+await web3auth.initModal();
+const web3authProvider = await web3auth.connect();
+```
+
+## 6. Best Practices
+
+1. **Key Management**
+   - Use hardware security modules
+   - Implement key rotation
+   - Backup recovery shares
+
+2. **Network Security**
+   - Secure communication channels
+   - Rate limiting
+   - DDoS protection
+
+3. **Audit**
+   - Regular security audits
+   - Bug bounty programs
+   - Formal verification
+
+## 7. Resources
+- [TSS Lib](https://github.com/binance-chain/tss-lib)
+- [Gnosis Safe](https://gnosis-safe.io/)
+- [Web3Auth](https://web3auth.io/)

@@ -1,0 +1,116 @@
+---
+title: "Smart Contract Auditing Guide"
+description: "Best practices for auditing Solidity contracts"
+date: "2025-04-08"
+categories: ["Blockchain", "Security", "Smart Contracts"]
+author: "Sarwagya"
+---
+
+# Smart Contract Auditing Process
+
+## Audit Preparation
+
+Before diving into code review, proper preparation is essential:
+
+1. **Documentation Review**:
+   - Study the project's whitepaper
+   - Review technical specifications
+   - Understand the business logic
+
+2. **Setup**:
+   - Clone the repository
+   - Install dependencies
+   - Run tests
+   - Set up static analysis tools
+
+## Common Vulnerabilities
+
+### 1. Reentrancy
+```solidity
+// Vulnerable
+function withdraw() external {
+    uint amount = balances[msg.sender];
+    (bool success, ) = msg.sender.call{value: amount}("");
+    require(success, "Transfer failed");
+    balances[msg.sender] = 0;
+}
+
+// Fixed
+function withdraw() external nonReentrant {
+    uint amount = balances[msg.sender];
+    balances[msg.sender] = 0;
+    (bool success, ) = msg.sender.call{value: amount}("");
+    require(success, "Transfer failed");
+}
+```
+
+### 2. Access Control
+```solidity
+// Vulnerable
+function transferOwnership(address newOwner) external {
+    owner = newOwner;
+}
+
+// Fixed
+function transferOwnership(address newOwner) external onlyOwner {
+    require(newOwner != address(0), "Invalid address");
+    emit OwnershipTransferred(owner, newOwner);
+    owner = newOwner;
+}
+```
+
+## Audit Checklist
+
+1. **Code Quality**
+   - Follows style guide (e.g., Solidity Style Guide)
+   - Proper documentation (NatSpec)
+   - Test coverage >90%
+
+2. **Security**
+   - No known vulnerabilities (run Slither, MythX)
+   - Proper access controls
+   - Safe math operations
+   - Reentrancy protection
+
+3. **Gas Optimization**
+   - Efficient storage usage
+   - Minimal external calls
+   - Loop optimizations
+
+## Tools for Auditing
+
+1. **Static Analysis**
+   - Slither
+   - MythX
+   - Solhint
+
+2. **Formal Verification**
+   - Certora
+   - K-Framework
+   - SMTChecker
+
+3. **Fuzzing**
+   - Echidna
+   - Foundry fuzz tests
+   - Property-based testing
+
+## Reporting Findings
+
+1. **Severity Levels**
+   - Critical
+   - High
+   - Medium
+   - Low
+   - Informational
+
+2. **Report Structure**
+   - Executive Summary
+   - Methodology
+   - Detailed Findings
+   - Recommendations
+   - Appendix
+
+## Resources
+- [Consensys Best Practices](https://consensys.github.io/smart-contract-best-practices/)
+- [Smart Contract Weakness Registry](https://swcregistry.io/)
+- [OpenZeppelin Security Center](https://security.openzeppelin.com/)

@@ -1,0 +1,116 @@
+---
+title: "ZK-EVM: Technical Deep Dive"
+description: "Understanding zero-knowledge Ethereum Virtual Machines"
+date: "2025-03-06"
+categories: ["Blockchain", "ZKPs", "Ethereum"]
+author: "Sarwagya"
+---
+
+# ZK-EVM Architecture
+
+## 1. Core Components
+
+### 1.1 Execution Trace
+```rust
+struct ExecutionTrace {
+    program_counter: u64,
+    stack: Vec<U256>,
+    memory: Vec<u8>,
+    storage: HashMap<U256, U256>,
+    opcode: Opcode,
+    gas_used: u64,
+}
+```
+
+## 2. Circuit Design
+
+### 2.1 EVM Opcode Constraints
+```rust
+match opcode {
+    Opcode::ADD => {
+        let a = stack.pop()?;
+        let b = stack.pop()?;
+        let sum = a.overflowing_add(b);
+        stack.push(sum.0);
+        // Constrain: a + b - sum = 0
+        cs.enforce(
+            || "add",
+            |lc| lc + a.lc() + b.lc() - sum.lc(),
+            |lc| lc + CS::one(),
+            |lc| lc,
+        );
+    }
+    // Other opcodes...
+}
+```
+
+## 3. State Management
+
+### 3.1 Sparse Merkle Tree
+```solidity
+contract SparseMerkleTree {
+    mapping(uint256 => bytes32) public nodes;
+    
+    function update(
+        uint256 index,
+        bytes32 value,
+        bytes32[] calldata proof
+    ) public {
+        bytes32 node = keccak256(abi.encodePacked(index, value));
+        for (uint256 i = 0; i < proof.length; i++) {
+            if (index & (1 << i) == 0) {
+                node = keccak256(abi.encodePacked(node, proof[i]));
+            } else {
+                node = keccak256(abi.encodePacked(proof[i], node));
+            }
+        }
+        require(node == root, "Invalid proof");
+    }
+}
+```
+
+## 4. Proving System
+
+### 4.1 PLONK Arithmetization
+```rust
+struct PlonkConstraint {
+    left: Vec<(F, usize, bool)>,
+    right: Vec<(F, usize, bool)>,
+    out: Vec<(F, usize, bool)>,
+    mul: F,
+    constant: F,
+}
+
+struct PlonkCircuit {
+    witness: Vec<F>,
+    constraints: Vec<PlonkConstraint>,
+    public_inputs: Vec<F>,
+}
+```
+
+## 5. Performance
+
+### 5.1 Benchmarks
+- ~5M gas/s proof generation
+- ~500KB proof size
+- < 1s verification time
+
+## 6. Implementation
+
+### 6.1 Running a Node
+```bash
+# Clone zkEVM repository
+git clone https://github.com/0xPolygonHermez/zkevm-node.git
+cd zkevm-node
+
+# Start local development network
+docker-compose up -d
+
+# Deploy and test contracts
+npx hardhat run scripts/deploy.ts --network zkevm
+```
+
+## 7. Resources
+- [zkEVM Documentation](https://zkevm.polygon.technology/)
+- [Scroll zkEVM](https://scroll.io/)
+- [zkSync Era](https://era.zksync.io/)

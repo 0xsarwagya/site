@@ -1,0 +1,106 @@
+---
+title: "DeFi Insurance Solutions"
+description: "Protecting against smart contract risks"
+date: "2025-04-20"
+categories: ["DeFi", "Insurance", "Risk Management"]
+author: "Sarwagya"
+---
+
+# DeFi Insurance Landscape
+
+## Insurance Models
+
+### 1. Protocol-Owned Coverage
+
+```solidity
+// Simplified insurance pool
+contract InsurancePool {
+    IERC20 public immutable token;
+    uint256 public totalCoverage;
+    uint256 public premiumRate = 30; // 0.3%
+    
+    mapping(address => uint256) public coverage;
+    mapping(address => uint256) public claims;
+    
+    function buyCoverage(uint256 amount, uint256 period) external {
+        uint256 premium = (amount * premiumRate * period) / (365 days * 10000);
+        token.transferFrom(msg.sender, address(this), premium);
+        coverage[msg.sender] += amount;
+        totalCoverage += amount;
+    }
+    
+    function fileClaim(uint256 amount, bytes calldata proof) external {
+        require(coverage[msg.sender] >= amount, "Insufficient coverage");
+        require(verifyProof(proof), "Invalid claim");
+        
+        coverage[msg.sender] -= amount;
+        claims[msg.sender] += amount;
+        totalCoverage -= amount;
+        
+        token.transfer(msg.sender, amount);
+    }
+}
+```
+
+## Risk Assessment
+
+### 1. Smart Contract Risk
+- Code audits
+- Bug bounty programs
+- Formal verification
+
+### 2. Oracle Risk
+- Multiple data sources
+- Time-weighted average prices
+- Decentralized oracles
+
+## Claim Process
+
+1. **Incident Detection**
+   - Monitor protocol health
+   - Track unusual activity
+   - Community reporting
+
+2. **Claim Submission**
+   - Provide transaction details
+   - Submit proof of loss
+   - Pay claim fee
+
+3. **Claim Assessment**
+   - Automated checks
+   - Manual review
+   - Community voting
+
+## Best Practices
+
+### 1. For Users
+- Understand coverage limits
+- Check claim process
+- Monitor protocol health
+
+### 2. For Protocols
+- Maintain sufficient reserves
+- Regular risk assessments
+- Transparent operations
+
+## Leading Solutions
+
+1. **Nexus Mutual**
+   - On-chain coverage
+   - Claims assessment
+   - Risk assessment
+
+2. **InsurAce**
+   - Multi-chain coverage
+   - Portfolio-based policies
+   - Customizable terms
+
+3. **UnoRe**
+   - Reinsurance
+   - Capital efficiency
+   - Risk modeling
+
+## Resources
+- [Nexus Mutual Docs](https://nexusmutual.io/)
+- [InsurAce Protocol](https://www.insurace.io/)
+- [DeFi Safety](https://www.defisafety.com/)

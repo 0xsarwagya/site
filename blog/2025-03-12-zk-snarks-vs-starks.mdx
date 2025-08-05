@@ -1,0 +1,102 @@
+---
+title: "ZK-SNARKs vs STARKs: A Technical Comparison"
+description: "Understanding zero-knowledge proof systems"
+date: "2025-03-12"
+categories: ["Blockchain", "Cryptography", "ZKPs"]
+author: "Sarwagya"
+---
+
+# ZK Proof Systems Compared
+
+## 1. Core Differences
+
+### 1.1 Trust Setup
+- **ZK-SNARKs**: Require trusted setup (Toxic waste problem)
+- **STARKs**: Trustless setup (No toxic waste)
+
+### 1.2 Security Assumptions
+- **ZK-SNARKs**: Relies on elliptic curves (pairing-friendly)
+- **STARKs**: Relies on hashes (collision resistance)
+
+## 2. Performance
+
+### 2.1 Prover Time
+```python
+# STARK prover (slower but parallelizable)
+def prove_stark(computation, private_inputs):
+    execution_trace = generate_trace(computation, private_inputs)
+    polynomial_constraints = arithmetize(execution_trace)
+    return generate_proof(polynomial_constraints)
+
+# SNARK prover (faster but more memory)
+def prove_snark(circuit, private_inputs):
+    return groth16_prover(circuit, private_inputs)
+```
+
+## 3. Proof Sizes
+
+### 3.1 Comparison
+| Metric       | ZK-SNARK | STARK     |
+|--------------|----------|-----------|
+| Proof Size   | ~200B    | ~100KB    |
+| Verifier Gas | ~200K    | ~2M       |
+| Setup        | Required | None      |
+| Quantum Safe | No       | Yes       |
+
+## 4. Implementation
+
+### 4.1 ZK-SNARK (Circom)
+```circom
+// Example: Prove knowledge of hash preimage
+template Hash() {
+    signal private input in;
+    signal output out;
+    
+    // Constraints for SHA256
+    // ...
+    
+    // Ensure output matches hash
+    out <== sha256(in);
+}
+
+component main = Hash();
+```
+
+### 4.2 STARK (Cairo)
+```python
+%builtins pedersen range_check
+
+from starkware.cairo.common.alloc import alloc
+from starkware.cairo.common.crypto import hash as hash_func
+
+def main():
+    # Allocate memory
+    let (data) = alloc()
+    
+    # Set input
+    assert [data] = 12345
+    
+    # Compute hash
+    let (hash) = hash_func(data)
+    
+    # Return hash
+    return (hash=hash)
+end
+```
+
+## 5. Use Cases
+
+### 5.1 When to Use ZK-SNARKs
+- Private transactions
+- Identity proofs
+- Layer 2 scaling
+
+### 5.2 When to Use STARKs
+- High-value financial systems
+- Post-quantum security
+- Complex computations
+
+## 6. Resources
+- [zk-SNARKs in a Nutshell](https://z.cash/technology/zksnarks/)
+- [STARKs whitepaper](https://eprint.iacr.org/2018/046.pdf)
+- [Circom Documentation](https://docs.circom.io/)
